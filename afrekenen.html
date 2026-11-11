@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Afrekenen · 2-Sleep</title>
+<meta name="description" content="Rond je bestelling af. Dit is een voorbeeldshop: er wordt niets besteld of betaald.">
+<meta name="theme-color" content="#f6f6f0">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/site/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/img/site/apple-touch-icon-180.png">
+<script>document.documentElement.classList.add('js');if(location.protocol!=='file:'){['baskervville-latin','instrument-sans-latin'].forEach(function(n){var l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.crossOrigin='anonymous';l.href='assets/fonts/'+n+'.woff2';document.head.appendChild(l)})}</script>
+<style>@view-transition{navigation:auto}</style>
+<link rel="stylesheet" href="assets/css/site.css?v=20261111d">
+</head>
+<body class="p-afrekenen" data-root="">
+<a class="skip" href="#inhoud">Naar de inhoud</a>
+<header class="kassakop">
+  <a class="kassakop__logo" href="index.html"><img src="assets/img/site/logo-2sleep.png" width="283" height="121" alt="2-Sleep Luxury Bedding, naar de startpagina"></a>
+  <a class="tknop kassakop__terug" href="winkelmand.html"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>Terug naar je winkelmand</span></a>
+</header>
+<p class="kassabalk veld-creme">Dit is een voorbeeldshop. Je gegevens worden niet verstuurd en niet bewaard.</p>
+<main id="inhoud" class="kassa" data-pagina="afrekenen">
+  <div class="kassa__in">
+    <div class="kassa__links">
+      <h1 class="kassa__h1" data-reveal>Afrekenen</h1>
+      <ol class="voortgang" aria-label="Voortgang" data-voortgang data-reveal>
+        <li data-stap-naam="1" aria-current="step"><span class="voortgang__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Gegevens</li>
+        <li data-stap-naam="2"><span class="voortgang__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Levering</li>
+        <li data-stap-naam="3"><span class="voortgang__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Overzicht</li>
+      </ol>
+      <p class="vh" aria-live="polite" data-stap-tel>1 van 3</p>
+      <div class="kassa__leeg" data-kassa-leeg hidden>
+        <p class="lead">Je winkelmand is leeg.</p>
+        <p>Er valt nog niets af te rekenen. Kussens, dekbedden, hoeslakens en wasparfum bestel je hier gewoon online; een bed kies je liefst na het liggen in onze showroom in Heers.</p>
+        <p><a class="knop knop--vol" href="collectie/kussens.html">Bekijk de kussens</a> <a class="tlink" href="slaapadvies.html">Plan een slaapadvies</a></p>
+      </div>
+      <form class="kassa__form" data-kassa novalidate>
+        <section class="stap" data-stap="1" aria-labelledby="stap1-kop">
+          <div class="stap__kop"><h2 id="stap1-kop" tabindex="-1">Je gegevens</h2>
+            <button type="button" class="tlink stap__vul" data-vul>Vul voorbeeldgegevens in</button></div>
+          <div class="velden">
+            <div class="veld veld--vol"><label for="k-mail">E-mail</label><input id="k-mail" type="email" autocomplete="email" inputmode="email" required></div>
+            <div class="veld"><label for="k-voornaam">Voornaam</label><input id="k-voornaam" type="text" autocomplete="given-name" required></div>
+            <div class="veld"><label for="k-achternaam">Achternaam</label><input id="k-achternaam" type="text" autocomplete="family-name" required></div>
+            <div class="veld veld--vol"><label for="k-tel">Telefoon <span class="optioneel">(optioneel)</span></label><input id="k-tel" type="tel" autocomplete="tel" inputmode="tel"></div>
+            <div class="veld veld--vol"><label for="k-straat">Straat en nummer</label><input id="k-straat" type="text" autocomplete="street-address" required></div>
+            <div class="veld"><label for="k-postcode">Postcode</label><input id="k-postcode" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="4" required data-postcode></div>
+            <div class="veld"><label for="k-gemeente">Gemeente</label><input id="k-gemeente" type="text" autocomplete="address-level2" required></div>
+            <div class="veld veld--vol"><label for="k-land">Land</label><select id="k-land" autocomplete="country" aria-describedby="k-land-hulp"><option value="BE" selected>België</option></select>
+              <p class="veld__hulp" id="k-land-hulp">Levering buiten België? Mail <a href="mailto:info@2-sleep.be">info@2-sleep.be</a>.</p></div>
+            <div class="veld veld--vol"><label for="k-notities">Notities bij je bestelling <span class="optioneel">(optioneel)</span></label><textarea id="k-notities" rows="3"></textarea></div>
+          </div>
+          <div class="stap__knoppen"><span></span><button type="button" class="knop knop--vol" data-naar="2">Verder naar levering</button></div>
+        </section>
+        <section class="stap" data-stap="2" aria-labelledby="stap2-kop" hidden>
+          <div class="stap__kop"><h2 id="stap2-kop" tabindex="-1">Levering</h2></div>
+          <fieldset class="radiokaarten">
+            <legend class="vh">Hoe ontvang je je bestelling?</legend>
+            <label class="radiokaart"><input class="vh-input" type="radio" name="levering" value="afhalen" checked>
+              <span class="radiokaart__tekst"><span class="radiokaart__kop">Afhalen in de winkel</span>
+              <span data-afhaal-tekst>Steenweg 49a, Heers. Gratis, klaar vanaf 24 uur na je bestelling, af te halen binnen 30 kalenderdagen.</span></span>
+              <span class="radiokaart__prijs">Gratis</span><span class="radiokaart__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>
+            <label class="radiokaart" data-lev-klein><input class="vh-input" type="radio" name="levering" value="levering">
+              <span class="radiokaart__tekst"><span class="radiokaart__kop">Levering in België</span>
+              <span>Gratis vanaf € 70 incl. btw, anders minimaal € 7,95 per bestelling.</span></span>
+              <span class="radiokaart__prijs" data-lev-prijs></span><span class="radiokaart__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>
+            <label class="radiokaart" data-lev-bed hidden><input class="vh-input" type="radio" name="levering" value="levering-bed">
+              <span class="radiokaart__tekst"><span class="radiokaart__kop">Levering door 2-Sleep</span>
+              <span>Elke levering verzorgen we zelf. Vanaf 30 kg treffen we een aparte regeling voor de levering.</span></span>
+              <span class="radiokaart__prijs">Aparte regeling</span><span class="radiokaart__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>
+          </fieldset>
+          <div class="stap__knoppen"><button type="button" class="tlink" data-naar="1">Terug naar je gegevens</button><button type="button" class="knop knop--vol" data-naar="3">Verder naar het overzicht</button></div>
+        </section>
+        <section class="stap" data-stap="3" aria-labelledby="stap3-kop" hidden>
+          <div class="stap__kop"><h2 id="stap3-kop" tabindex="-1">Overzicht</h2></div>
+          <div class="samen" data-samen></div>
+          <p class="kassa__betaal">In de echte shop betaal je hierna met Bancontact, Visa, Mastercard, PayPal of overschrijving. In deze voorbeeldshop zijn er geen betaalvelden.</p>
+          <div class="vinkje vinkje--akkoord"><input id="k-akkoord" type="checkbox" required><label for="k-akkoord">Ik ga akkoord met de <a href="algemene-voorwaarden.html" target="_blank" rel="noopener">algemene voorwaarden</a></label></div>
+          <div class="stap__knoppen"><button type="button" class="tlink" data-naar="2">Terug naar levering</button><button type="submit" class="knop knop--vol">Bestelling plaatsen</button></div>
+        </section>
+      </form>
+    </div>
+    <figure class="kassa__leegfoto" data-kassa-leegfoto hidden><img src="assets/img/ui/showroom-kussens-teal-4x5-900.webp" width="900" height="1125" alt="Teal fluwelen sierkussens op een bed in de showroom" loading="lazy" decoding="async" sizes="(min-width: 1024px) 34vw, 100vw"></figure>
+    <aside class="kassa__rechts" aria-labelledby="ov-kop" data-ov-vak data-reveal>
+      <button type="button" class="ovknop" aria-expanded="false" aria-controls="ov-inhoud" data-ov-knop><span>Toon overzicht</span><span class="ovknop__bedrag prijs" data-ov-totaal></span><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="ov" id="ov-inhoud" data-ov>
+        <h2 id="ov-kop" class="ov__kop">Je bestelling</h2>
+        <ul class="ovregels" data-ov-regels></ul>
+        <dl class="ov__som" data-ov-som></dl>
+      </div>
+    </aside>
+  </div>
+</main>
+<footer class="kassavoet">
+  <ul class="kassavoet__links"><li><a href="verzenden.html">Verzenden</a></li><li><a href="betalen.html">Betalen</a></li><li><a href="retourneren.html">Retourneren</a></li><li><a href="algemene-voorwaarden.html">Algemene voorwaarden</a></li></ul>
+  <p class="voet__wet">© 2-Sleep · Voorbeeldshop door EM Launchpad<br>CBDO BV, handelend als 2-Sleep · btw BE0829.049.595</p>
+</footer>
+<div class="vh" aria-live="polite" data-live></div>
+<script src="assets/js/site.js?v=20261111d" defer></script>
+<script src="assets/js/mand.js?v=20261111d" defer></script>
+<script src="assets/js/zoeken.js?v=20261111d" defer></script>
+<script src="assets/js/afrekenen.js?v=20261111d" defer></script>
+</body>
+</html>
