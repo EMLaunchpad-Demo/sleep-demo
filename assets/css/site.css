@@ -200,26 +200,92 @@ strong { font-weight: 600; }
 .gsm__voet .knop { margin-top: 4px; }
 .is-gsm-open { overflow: hidden; }
 
-/* ------------------------------------------------------------------ home: hero */
-.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: var(--margin) var(--margin) 0; align-items: start; overflow-x: clip; }
-.hero__vel { grid-column: 1; background: var(--linen); }
-.hero__eerste { min-height: calc(100svh - 2 * var(--margin)); display: grid; grid-template-rows: auto 1fr; text-align: center; }
-.hero__rij { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-.hero__rij a { text-decoration: none; font-weight: 500; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+/* ------------------------------------------------------------------ home: hero over het volle scherm (25/11/2026, stijl van v2) */
+.hero { position: relative; isolation: isolate; display: grid; grid-template-rows: auto 1fr auto; height: 100vh; height: 100svh; min-height: 480px;
+  color: var(--on-dark); background: var(--ink-field); overflow: hidden; --focus: var(--sage); }
+.hero__beeld { position: absolute; inset: 0; z-index: -1; }
+.hero__beeld img { width: 100%; height: 100%; object-fit: cover; }
+/* neutrale scrim (ontwerp.md 5): kop, knoppen en balk blijven leesbaar op elke uitsnede */
+.hero__beeld::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgb(12 13 13 / .42) 0%, rgb(12 13 13 / 0) 62%),
+    linear-gradient(180deg, rgb(12 13 13 / .5) 0%, rgb(12 13 13 / .08) 22%, rgb(12 13 13 / .2) 42%, rgb(12 13 13 / .58) 64%, rgb(12 13 13 / .8) 100%); }
+@media (max-width: 767px) { .hero__beeld::after { background: linear-gradient(180deg, rgb(12 13 13 / .2) 0%, rgb(12 13 13 / .12) 26%, rgb(12 13 13 / .5) 48%, rgb(12 13 13 / .82) 100%); } }
+.hero__rij { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 18px var(--margin) 0; }
+.hero__rij a { color: var(--on-dark); text-decoration: none; font-weight: 500; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
 .hero__rij a:hover { text-decoration: underline; text-underline-offset: .22em; }
 .hero__rij-l { display: flex; gap: 24px; justify-content: flex-start; }
 .hero__rij-r { display: flex; gap: 24px; justify-content: flex-end; }
-.hero__logo img { width: 190px; height: auto; }
-.hero__tekst { align-self: start; margin-top: clamp(80px, 22svh, 260px); display: grid; justify-items: center; gap: 0; }
-.hero__h1 { font-size: var(--step-head); line-height: 1.04; letter-spacing: -0.015em; max-width: 16ch; }
-.hero__steun { max-width: 40ch; margin: 36px auto 32px; }
-.hero__foto { grid-column: 2; grid-row: 1 / span 3; position: sticky; top: var(--margin); height: calc(100svh - 2 * var(--margin)); overflow: hidden; background: var(--tile); }
-.hero__lagen { position: absolute; inset: 0; }
-.hero__laag { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--t-fade) ease; }
-.hero__laag.is-aan { opacity: 1; }
-.hero__laag.is-snel { transition-duration: 600ms; }
-.hero__balk { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; margin: 0; background: var(--linen); display: flex;
-  align-items: center; justify-content: space-between; gap: 16px; padding: 0 20px; }
+.hero__logo img { width: 170px; height: auto; }
+.hero__tekst { grid-row: 2; align-self: end; padding: 0 var(--margin); }
+.hero__h1 { font-size: var(--step-display); line-height: .98; letter-spacing: -0.02em; max-width: 11ch; }
+.hero__steun { max-width: 46ch; margin: 24px 0 32px; font-size: clamp(1.0625rem, 1rem + .3vw, 1.25rem); line-height: 1.5; }
+.hero__knoppen { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
+.hero__balk { grid-row: 3; display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 0;
+  padding: 28px var(--margin) 24px; font-size: var(--step-small); }
+.knop--rand { color: var(--on-dark); background: transparent; box-shadow: inset 0 0 0 1px rgb(246 246 240 / .8); }
+.knop--rand:hover { background: rgb(246 246 240 / .14); }
+@keyframes heroIn { from { transform: scale(1.06); } to { transform: none; } }
+@media (prefers-reduced-motion: no-preference) { .js .hero__img { animation: heroIn 2400ms var(--ease-out) both; } }
+@media (max-width: 1023px) {
+  .hero { height: calc(100vh - var(--kop-h)); height: calc(100svh - var(--kop-h)); grid-template-rows: 1fr auto; }
+  .hero__rij { display: none; }
+  .hero__tekst { grid-row: 1; }
+  .hero__balk { grid-row: 2; padding: 24px var(--margin) 20px; }
+}
+@media (max-width: 767px) {
+  .hero__h1 { font-size: clamp(2.375rem, 10.5vw, 3rem); }
+  .hero__steun { margin: 14px 0 22px; font-size: 1rem; }
+  .hero__knoppen { gap: 8px; }
+  .hero__knoppen .knop { flex: 1 1 100%; }
+  .hero__balk { padding-top: 18px; }
+}
+@media (max-width: 359px) { .hero__balk { flex-direction: column; justify-content: center; align-items: flex-start; gap: 0; } }
+
+/* ------------------------------------------------------------------ home: wandel door de showroom (25/11/2026, uit v2)
+   Gewone versie (zonder JS en bij reduced motion): de foto's onder elkaar, elk met hun tekst.
+   Met JS en zonder reduced motion: de sectie kleeft een scherm hoog en de foto's schuiven bij het scrollen van rechts
+   naar links (site.js, wandel()). Geen scroll-kaping: de gewone scroll van de pagina stuurt de beweging. */
+.wandel { padding: var(--space-section) var(--margin); }
+.wandel__kop { color: var(--on-dark); margin-bottom: 40px; }
+.wandel__balk { display: none; }
+.wandel__spoor { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; }
+.wandel__beeld img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+.wandel__tekst { margin-top: 16px; color: var(--on-dark); font-size: var(--step-body); max-width: 40ch; }
+.wandel__n { display: block; font-size: var(--step-small); color: var(--stone); font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.wandel__titel { font-size: var(--step-head); margin: 6px 0 10px; }
+.wandel__zin { margin: 0; }
+@media (min-width: 768px) { .wandel__spoor { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 64px var(--gutter); } }
+@media (max-aspect-ratio: 3/4) { .wandel__beeld img { aspect-ratio: 3 / 4; } }
+@media (prefers-reduced-motion: no-preference) {
+  .js .wandel { padding: 0; height: calc(100vh + (var(--dias) - 1) * 60vh); height: calc(100svh + (var(--dias) - 1) * 60svh); }
+  .js .wandel__plak { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+  .js .wandel__boven { position: absolute; z-index: 2; left: var(--margin); right: var(--margin); top: calc(var(--kop-h) + 20px);
+    display: grid; gap: 14px; pointer-events: none; }
+  .js .wandel__kop { font-size: var(--step-lead); margin: 0; }
+  .js .wandel__balk { display: block; height: 2px; background: rgb(246 246 240 / .28); }
+  .js .wandel__balk i { display: block; height: 100%; background: var(--on-dark); transform: scaleX(0); transform-origin: 0 50%; }
+  .js .wandel__spoor { display: flex; gap: 0; height: 100%; will-change: transform; }
+  .js .wandel__dia { flex: 0 0 100%; position: relative; overflow: hidden; }
+  .js .wandel__fig, .js .wandel__beeld { position: absolute; inset: 0; }
+  .js .wandel__beeld img { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; transform: scale(1.1); }
+  .js .wandel__beeld::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgb(12 13 13 / .4) 0%, rgb(12 13 13 / 0) 60%),
+      linear-gradient(180deg, rgb(12 13 13 / .62) 0%, rgb(12 13 13 / .3) 15%, rgb(12 13 13 / 0) 30%, rgb(12 13 13 / 0) 42%, rgb(12 13 13 / .55) 66%, rgb(12 13 13 / .82) 100%); }
+  .js .wandel__tekst { position: absolute; z-index: 1; left: var(--margin); right: var(--margin); bottom: clamp(32px, 10svh, 112px);
+    margin: 0; max-width: 34rem; }
+  .js .wandel__n { color: var(--on-dark); }
+  .js .wandel__titel { font-size: clamp(2.25rem, 1.4rem + 3.4vw, 4.5rem); line-height: 1; margin: 12px 0 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .wandel__spoor, .wandel__beeld img { transform: none !important; } }
+
+/* ------------------------------------------------------------------ home: afdelingen met vaste foto (desktop) */
+.afd-sectie { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 0 var(--margin); align-items: start; }
+.afd-sectie .afdelingen { grid-column: 1; grid-row: 1; }
+.afd-foto { grid-column: 2; grid-row: 1; position: sticky; top: calc(var(--kop-h) + 12px); margin-top: clamp(48px, 8vw, 120px);
+  height: calc(100vh - var(--kop-h) - 24px); height: calc(100svh - var(--kop-h) - 24px); overflow: hidden; background: var(--tile); }
+.afd-foto__lagen { position: absolute; inset: 0; }
+.afd-foto__laag { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 600ms ease; }
+.afd-foto__laag.is-aan { opacity: 1; }
 
 .afdelingen { padding: clamp(48px, 8vw, 120px) 0 clamp(72px, 10vw, 140px); text-align: center; }
 .afdelingen__kop { margin-bottom: 56px; }
@@ -236,26 +302,12 @@ strong { font-weight: 600; }
 .afdelingen__voet .tlink, .merken__alle, .rij__kop .tlink { display: inline-flex; align-items: center; min-height: 44px; }
 
 @media (max-width: 1023px) {
-  .hero { display: flex; flex-direction: column; align-items: stretch; padding: 0; }
-  .hero__foto { order: -1; position: relative; top: auto; height: auto; margin: 0 var(--margin); z-index: 0; flex: none; overflow: visible; background: none; }
-  .hero__lagen { position: relative; height: 56svh; overflow: hidden; background: var(--tile); }
-  .hero__balk { position: static; height: auto; min-height: 44px; background: none; padding: 10px 0 0; }
-  .hero__vel { position: relative; z-index: 1; padding: 0 var(--margin); }
-  .hero__eerste { min-height: 0; display: block; padding-top: 36px; }
-  .hero__rij { display: none; }
-  .hero__tekst { margin-top: 0; }
-  .hero__h1 { font-size: clamp(1.8rem, 9vw, 2.2rem); }
-  .hero__steun { margin: 20px auto 28px; font-size: 1rem; }
-  .hero__tekst .knop { width: 100%; }
-  .hero__balk { font-size: var(--step-small); }
-  .hero__adres { text-align: right; }
-  .hero__vel { max-width: 640px; margin: 0 auto; }
-  .afdelingen { padding-top: 64px; }
+  .afd-sectie { display: block; }
+  .afd-foto { display: none; }
+  .afdelingen { max-width: 640px; margin: 0 auto; padding-top: 64px; }
 }
-@media (min-width: 768px) and (max-width: 1023px) { .hero__lagen { height: 60svh; } .hero__h1 { font-size: var(--step-head); } .hero__tekst .knop { width: auto; } }
-@media (max-width: 359px) { .hero__balk { flex-direction: column; justify-content: center; align-items: flex-start; gap: 0; } .hero__adres { text-align: left; } }
 /* desktop: geen leeg gat tussen de afdelingenkaart en de merken */
-@media (min-width: 1024px) { .afdelingen { padding-bottom: 64px; } .hero + .merken { margin-top: clamp(56px, 6vw, 96px); } }
+@media (min-width: 1024px) { .afdelingen { padding-bottom: 64px; } .afd-sectie + .merken { margin-top: clamp(56px, 6vw, 96px); } }
 
 /* merken */
 .merken { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 88svh; margin-top: var(--space-section); }

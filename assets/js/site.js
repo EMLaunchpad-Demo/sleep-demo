@@ -363,51 +363,80 @@
     m.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluit(); TS.focusVal(m, e); });
   }
 
-  /* ---------------------------------------------------------------- home: wisselende foto en afdelingen */
-  function hero() {
-    var vak = $('[data-hero-foto]');
-    if (!vak) return;
-    var lagen = $('.hero__lagen', vak);
-    var lijst = [];
-    try { lijst = JSON.parse(vak.getAttribute('data-wissel')) || []; } catch (e) { lijst = []; }
+  /* ---------------------------------------------------------------- home: afdelingen met vaste foto (desktop) */
+  function afdFoto() {
+    var vak = $('[data-afd-foto]');
+    var afd = $('#afdelingen');
+    if (!vak || !afd) return;
+    var lagen = $('.afd-foto__lagen', vak);
     var huidig = lagen.querySelector('.is-aan');
-    var i = 0, timer = null, gepauzeerd = false;
+    var breed = window.matchMedia('(min-width: 1024px)');
     function laag(src, alt) {
       var l = $$('img', lagen).filter(function (x) { return x.getAttribute('src') === src; })[0];
       if (!l) {
         l = doc.createElement('img');
-        l.className = 'hero__laag'; l.src = src; l.alt = alt || ''; l.decoding = 'async';
+        l.className = 'afd-foto__laag'; l.src = src; l.alt = alt || ''; l.decoding = 'async';
         lagen.appendChild(l);
       }
       return l;
     }
-    function toon(src, alt, snel) {
+    function toon(src, alt) {
+      if (!breed.matches) return; /* op gsm en tablet staat de foto niet in beeld: niets laden */
       var l = laag(src, alt);
       if (l === huidig) return;
-      var zet = function () {
-        l.classList.toggle('is-snel', !!snel);
-        if (huidig) { huidig.classList.toggle('is-snel', !!snel); huidig.classList.remove('is-aan'); }
-        l.classList.add('is-aan'); huidig = l;
-      };
+      var zet = function () { if (huidig) huidig.classList.remove('is-aan'); l.classList.add('is-aan'); huidig = l; };
       if (l.complete) zet(); else l.addEventListener('load', zet, { once: true });
     }
-    function volgende() {
-      if (gepauzeerd || doc.hidden || lijst.length < 2) return;
-      i = (i + 1) % lijst.length;
-      toon(lijst[i].src, lijst[i].alt, false);
-    }
-    function start() { clearInterval(timer); if (!reduce) timer = setInterval(volgende, 6000); }
-    start();
-    doc.addEventListener('visibilitychange', function () { if (doc.hidden) clearInterval(timer); else start(); });
-    var afd = $('#afdelingen');
-    $$('[data-foto]', afd || doc.createElement('div')).forEach(function (a) {
-      function zet() { gepauzeerd = true; toon(a.getAttribute('data-foto'), a.getAttribute('data-foto-alt'), true); }
+    $$('[data-foto]', afd).forEach(function (a) {
+      function zet() { toon(a.getAttribute('data-foto'), a.getAttribute('data-foto-alt')); }
       a.addEventListener('mouseenter', zet); a.addEventListener('focus', zet);
     });
-    if (afd) {
-      afd.addEventListener('mouseleave', function () { gepauzeerd = false; start(); });
-      afd.addEventListener('focusout', function (e) { if (!afd.contains(e.relatedTarget)) { gepauzeerd = false; start(); } });
+  }
+
+  /* ---------------------------------------------------------------- home: wandel door de showroom
+     De sectie is een paar schermen hoog en haar binnenkant kleeft; de gewone scroll van de pagina bepaalt hoe ver het
+     spoor met foto's naar links schuift. Bij reduced motion of zonder JS toont de CSS de gewone versie (foto's onder
+     elkaar) en doet dit niets. Foto's laden lazy; de volgende twee worden op tijd opgehaald. */
+  function wandel() {
+    var s = $('[data-wandel]');
+    if (!s || reduce) return;
+    var plak = $('.wandel__plak', s), spoor = $('[data-wandel-spoor]', s), balk = $('[data-wandel-balk]', s);
+    var beelden = $$('.wandel__beeld img', s);
+    var n = beelden.length, breed = 0, tik = false, geladen = 0;
+    if (!plak || !spoor || n < 2) return;
+    function laad(tot) {
+      for (; geladen <= Math.min(tot, n - 1); geladen++) beelden[geladen].loading = 'eager';
     }
+    /* elke foto blijft even staan (rust), daarna schuift de volgende vloeiend binnen: de tekst is leesbaar terwijl
+       ze stilstaat. Blijft gewoon de scroll volgen, zonder sprongen. */
+    var RUST = 0.3;
+    function glij(x) {
+      var i = Math.floor(x), f = x - i;
+      if (i >= n - 1) return n - 1;
+      f = Math.min(1, Math.max(0, (f - RUST / 2) / (1 - RUST)));
+      return i + f * f * (3 - 2 * f);
+    }
+    function zet() {
+      tik = false;
+      var r = s.getBoundingClientRect();
+      var lengte = s.offsetHeight - plak.offsetHeight;
+      var p = lengte > 0 ? Math.min(1, Math.max(0, -r.top / lengte)) : 0;
+      var pos = glij(p * (n - 1));
+      spoor.style.transform = 'translate3d(' + (-pos * breed).toFixed(1) + 'px,0,0)';
+      if (balk) balk.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+      /* het beeld schuift iets trager dan zijn dia: een lichte diepte, nooit verder dan de rand van de vergroting */
+      for (var i = 0; i < n; i++) {
+        var d = i - pos;
+        if (d > -1.2 && d < 1.2) beelden[i].style.transform = 'translate3d(' + (-d * 4.5).toFixed(2) + '%,0,0) scale(1.1)';
+      }
+      var h = window.innerHeight;
+      if (r.top < h * 2 && r.bottom > -h) laad(Math.ceil(pos) + 2);
+    }
+    function vraag() { if (!tik) { tik = true; requestAnimationFrame(zet); } }
+    function maat() { breed = plak.clientWidth; zet(); }
+    window.addEventListener('scroll', vraag, { passive: true });
+    window.addEventListener('resize', maat);
+    maat();
   }
 
   function merkTabs() {
@@ -805,7 +834,7 @@
   function start() {
     tellers(); hartjes(); uren();
     kopScroll(); megamenu(); gsmMenu();
-    hero(); merkTabs(); prijslijst(); strook();
+    afdFoto(); wandel(); merkTabs(); prijslijst(); strook();
     formulieren(); wanden(); schuif(); stage(); merkIndex(); TS.rijen(); extern(); cookiebanner(); cookiestatus();
     reveal();
     TS.emit('klaar', {});
