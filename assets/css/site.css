@@ -864,25 +864,36 @@ html:not(.js) .schuif__greep { display: none; }
 
 /* bezoek */
 .bkop { position: relative; }
-.bkop__img { width: 100%; height: clamp(320px, 56svh, 640px); object-fit: cover; }
+.bkop__img { width: 100%; height: clamp(320px, 56svh, 640px); object-fit: cover; object-position: 60% 55%; background: var(--tile); }
+@media (max-width: 767px) { .bkop__img { height: auto; aspect-ratio: 4 / 3; object-position: 95% 50%; } }
 .bkop__tekst { padding: 32px var(--margin) 0; max-width: 900px; }
 .bkop__tekst .lead { margin-top: 20px; }
-.bezoek__blokken { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gutter); padding: 64px var(--margin) 0; }
+/* showroompagina (opzetplan 5.1): adres en formulier bovenaan, uren en bel of mail eronder.
+   DOM-volgorde = gsm-volgorde (adres, formulier, uren, bel of mail); op desktop staat het formulier rechts naast de rest. */
+.bezoek__raster { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); row-gap: 56px;
+  padding: 56px var(--margin) 0; align-items: start; }
+.bblok--adres { grid-column: 1 / span 5; grid-row: 1; }
+.bblok--uren { grid-column: 1 / span 5; grid-row: 2; }
+.bblok--contact { grid-column: 1 / span 5; grid-row: 3; }
+.bblok--formulier { grid-column: 7 / span 6; grid-row: 1 / span 3; background: var(--tile); padding: clamp(24px, 3vw, 48px); }
+.bblok--formulier .veld input, .bblok--formulier .veld textarea, .bblok--formulier .veld select { background: var(--sheet); }
+.bblok--formulier .formulier { margin-top: 24px; }
+@media (max-width: 1023px) {
+  .bezoek__raster { grid-template-columns: minmax(0, 1fr); row-gap: 48px; padding-top: 40px; }
+  .bblok--adres, .bblok--uren, .bblok--contact, .bblok--formulier { grid-column: 1; grid-row: auto; }
+}
+@media (max-width: 767px) { .bblok--formulier { margin: 0 calc(var(--margin) * -1); padding: 32px var(--margin); } }
+.knop--route { min-height: 60px; padding: 0 32px; font-size: var(--step-body); }
+.knop--route .ic { width: 22px; height: 22px; flex: none; }
+@media (max-width: 767px) { .knop--route { display: flex; width: 100%; } }
 .bblok h2 { font-size: clamp(1.625rem, 1.2rem + 1.4vw, 2.25rem); margin-bottom: 20px; }
 .bblok .lead { margin-bottom: 16px; }
 .uren { width: 100%; max-width: 360px; font-variant-numeric: tabular-nums; }
 .uren th, .uren td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--tile-2); font-weight: 400; }
 .uren tr.is-vandaag th, .uren tr.is-vandaag td { font-weight: 600; }
 .uren tr.is-vandaag th::after { content: " · vandaag"; font-weight: 400; color: var(--muted); }
-.bblok__vandaag { margin-top: 12px; font-weight: 500; }
+.bblok__vandaag { margin: -4px 0 20px; font-weight: 500; }
 .bblok__vandaag:empty { display: none; }
-@media (max-width: 1023px) { .bezoek__blokken { grid-template-columns: 1fr; gap: 48px; } }
-.contact { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gutter); margin: var(--space-section) var(--margin) 0; align-items: start; }
-.contact__foto { grid-column: 1 / span 5; }
-.contact__foto img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
-.contact__vak { grid-column: 7 / span 5; }
-.contact__vak h2 { margin-bottom: 16px; }
-@media (max-width: 767px) { .contact__foto, .contact__vak { grid-column: 1 / -1; } .contact__foto { order: 2; } }
 .formulier { margin-top: 28px; display: grid; gap: 20px; }
 .veld label { display: block; font-weight: 500; margin-bottom: 6px; }
 .veld input, .veld textarea, .veld select { width: 100%; min-height: 52px; background: var(--tile); border: 0; border-bottom: 1px solid var(--muted); padding: 12px 14px; border-radius: 0; font-size: 1rem; }
@@ -1435,3 +1446,62 @@ html:not(.js) .schuif__greep { display: none; }
   .lade, .lade.is-open, .zoek, .zoek.is-open { transition: none; }
   .wvraag.is-uit { transform: none; }
 }
+
+/* kaart bezoekpagina (de sectie heet .routekaart: .kaart is de productkaart) */
+.routekaart { margin: var(--space-section) var(--margin) 0; }
+.routekaart h2 { font-size: clamp(1.625rem, 1.2rem + 1.4vw, 2.25rem); margin-bottom: 20px; }
+/* externe inhoud (kaart, later formulier of video): laadt pas na toestemming of een klik */
+.extern { background: var(--tile); min-height: 280px; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 32px; }
+.extern p { max-width: 60ch; }
+.extern__knoppen { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.extern__onthoud { display: flex; align-items: center; gap: 10px; font-size: var(--step-small); }
+.extern__onthoud input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); flex: none; }
+.extern__onthoud label { padding: 12px 0; cursor: pointer; }
+.extern.is-open { padding: 0; min-height: 0; }
+.extern__intrekken { margin-top: 12px; font-size: var(--step-small); }
+.extern__frame { display: block; width: 100%; height: clamp(320px, 55vh, 520px); border: 0; }
+.extern__frame--formulier { height: 760px; background: var(--sheet); }
+@media (max-width: 767px) { .extern { padding: 24px 20px; } }
+
+/* cookiebanner: klein, onderaan rechts (links staan de koppen en knoppen), nooit over het eerste scherm
+   (huidige-shop-zwaktes.md 3: de huidige banner bedekt een groot deel van het eerste scherm) */
+.cookie { position: fixed; right: var(--margin); bottom: var(--margin); z-index: 85; width: min(420px, calc(100% - 2 * var(--margin)));
+  max-height: calc(100svh - 2 * var(--margin)); overflow-y: auto; background: var(--sheet); color: var(--ink); padding: 20px 22px;
+  box-shadow: var(--shadow-float); font-size: var(--step-small); } /* taste-skill-ignore: zwevende laag (cookiebanner) */
+.cookie[hidden] { display: none; }
+.cookie__kop { font-family: var(--font-display); font-size: var(--step-lead); line-height: 1.2; margin: 0 0 8px; }
+.cookie__tekst { margin: 0 0 16px; }
+.cookie__knoppen { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cookie__knoppen .knop { min-height: 48px; padding: 0 16px; font-size: var(--step-small); }
+.cookie__knoppen .cookie__bewaar { grid-column: 1 / -1; }
+.cookie [hidden] { display: none !important; }
+.cookie__meer { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 12px 0 0; }
+.cookie__meer .tlink { min-height: 44px; display: inline-flex; align-items: center; }
+.cookie__keuzes { margin: 0 0 16px; display: grid; gap: 8px; }
+.cookie__keuzes[hidden] { display: none; }
+.cookie__keuze { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 2px 12px; align-items: start; background: var(--tile); padding: 14px 16px; cursor: pointer; }
+.cookie__keuze input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); grid-row: 1 / span 2; }
+.cookie__keuze input:disabled { cursor: not-allowed; }
+.cookie__naam { font-weight: 600; }
+.cookie__uitleg { color: var(--muted); grid-column: 2; }
+@media (max-width: 767px) {
+  .cookie { left: 0; right: 0; bottom: 0; width: 100%; padding: 18px var(--margin) calc(18px + env(safe-area-inset-bottom)); max-height: 80svh; }
+  .cookie__kop { font-size: 1.125rem; }
+  .cookie__tekst { margin-bottom: 12px; }
+}
+@media (max-width: 359px) { .cookie__knoppen { grid-template-columns: 1fr; } }
+.voet__cookies { color: var(--on-dark); text-decoration: underline; text-underline-offset: .22em; text-decoration-thickness: .07em; }
+.voet__cookies:hover { color: var(--sage); }
+.kassavoet .voet__cookies { display: inline-block; margin-top: 8px; }
+.cookiestatus { background: var(--tile); padding: 20px 24px; margin: 0 0 32px; display: grid; gap: 12px; justify-items: start; }
+.cookiestatus p { margin: 0; }
+
+/* juridische teksten: wat de klant nog moet aanvullen (wij schrijven geen juridische tekst) */
+.aanvullen { border: 2px dashed var(--accent); background: var(--creme); padding: 14px 18px; margin: 0 0 1em; font-size: var(--step-small); }
+.aanvullen strong { display: block; font-size: var(--step-body); margin-bottom: 4px; }
+/* home: kom langs zonder afspraak */
+.drie--langs .drie__cel { gap: 4px; }
+.drie__label { font-size: var(--step-small); color: var(--stone); }
+.drie--langs .drie__knop { text-decoration: none; justify-content: center; }
+.proef__meer { margin-top: 16px; }
+.proef__meer .tlink { color: var(--on-dark); }

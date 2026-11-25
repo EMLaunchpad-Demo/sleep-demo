@@ -678,12 +678,135 @@
     });
   };
 
+  /* ---------------------------------------------------------------- toestemming (cookiebanner)
+     Sleutel 2s.toestemming = {v: 1, extern: true|false, datum: "JJJJ-MM-DD"}. Zolang er geen keuze is, laadt de site niets
+     van andere diensten. "extern" = inhoud van andere diensten (kaart van Google Maps, later het formulier of een video).
+     Noodzakelijk (mand, bewaard, recent, deze keuze) blijft altijd in de eigen browser.
+     Oude sleutel 2s.toestemming.kaart ("ja", van 24/11) wordt één keer omgezet. */
+  var TOEST = '2s.toestemming';
+  TS.toestemming = {
+    lees: function () {
+      var t = TS.store.get(TOEST, null);
+      if (!t) {
+        try {
+          if (localStorage.getItem(TOEST + '.kaart') === 'ja') {
+            localStorage.removeItem(TOEST + '.kaart');
+            t = { v: 1, extern: true, datum: new Date().toISOString().slice(0, 10) };
+            TS.store.set(TOEST, t);
+          }
+        } catch (e) { /* opslag geblokkeerd */ }
+      }
+      return t && t.v === 1 ? t : null;
+    },
+    gekozen: function () { return !!TS.toestemming.lees(); },
+    mag: function (soort) { var t = TS.toestemming.lees(); return !!(t && t[soort || 'extern']); },
+    zet: function (keuze) {
+      var t = { v: 1, extern: !!keuze.extern, datum: new Date().toISOString().slice(0, 10) };
+      var ok = TS.store.set(TOEST, t);
+      TS.emit('toestemming', t);
+      return ok;
+    }
+  };
+
+  /* externe inhoud: [data-extern] met data-extern-src en data-extern-titel. Laadt meteen als er toestemming is,
+     anders pas na een klik op [data-extern-toon] (eenmalig, of "voortaan" met het vinkje [data-extern-onthoud]). */
+  function extern() {
+    $$('[data-extern]').forEach(function (v) {
+      if (v._ts) return; v._ts = true;
+      var leeg = v.innerHTML, intrek = null;
+      function open(metIntrekken) {
+        if (v.classList.contains('is-open')) return;
+        var f = doc.createElement('iframe');
+        f.src = v.getAttribute('data-extern-src');
+        f.title = v.getAttribute('data-extern-titel') || '';
+        f.loading = 'lazy';
+        f.referrerPolicy = 'no-referrer-when-downgrade';
+        f.className = 'extern__frame' + (v.getAttribute('data-extern') === 'formulier' ? ' extern__frame--formulier' : '');
+        v.innerHTML = '';
+        v.appendChild(f);
+        v.classList.add('is-open');
+        if (metIntrekken && !intrek) {
+          intrek = doc.createElement('p'); intrek.className = 'extern__intrekken';
+          var b = doc.createElement('button'); b.type = 'button'; b.className = 'tlink'; b.setAttribute('data-cookie-instellingen', '');
+          b.textContent = 'Cookie-instellingen';
+          intrek.appendChild(b);
+          v.insertAdjacentElement('afterend', intrek);
+        }
+      }
+      function dicht() {
+        if (!v.classList.contains('is-open')) return;
+        v.classList.remove('is-open');
+        v.innerHTML = leeg;
+        if (intrek) { intrek.remove(); intrek = null; }
+      }
+      v.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-extern-toon]')) return;
+        var vink = $('[data-extern-onthoud]', v);
+        if (vink && vink.checked) TS.toestemming.zet({ extern: true }); /* het event opent alle vakken */
+        else open(false);
+      });
+      TS.on('toestemming', function (e) { if (e.detail.extern) open(true); else dicht(); });
+      if (TS.toestemming.mag('extern')) open(true);
+    });
+  }
+
+  /* cookiebanner: [data-cookie] onderaan elke pagina. Verschijnt zolang er geen keuze is; elk element met
+     [data-cookie-instellingen] opent hem opnieuw, met de keuzes open. Weigeren is even makkelijk als toestaan. */
+  function cookiebanner() {
+    var c = $('[data-cookie]');
+    if (!c) return;
+    var keuzes = $('[data-cookie-keuzes]', c), vink = $('[data-cookie-extern]', c);
+    var bewaar = $('[data-cookie-bewaar]', c), kies = $('[data-cookie-kies]', c);
+    var terug = null;
+    function toon(metKeuzes) {
+      vink.checked = TS.toestemming.mag('extern');
+      keuzes.hidden = !metKeuzes; bewaar.hidden = !metKeuzes; kies.hidden = !!metKeuzes;
+      c.hidden = false;
+    }
+    function klaar(extern) {
+      TS.toestemming.zet({ extern: extern });
+      c.hidden = true;
+      TS.meld(extern ? 'Je keuze is bewaard: externe inhoud mag laden.' : 'Je keuze is bewaard: alleen wat nodig is.');
+      if (terug && doc.contains(terug)) terug.focus();
+      terug = null;
+      cookiestatus();
+    }
+    c.addEventListener('click', function (e) {
+      var k = e.target.closest('button');
+      if (!k) return;
+      if (k.hasAttribute('data-cookie-alles')) klaar(true);
+      else if (k.hasAttribute('data-cookie-nodig')) klaar(false);
+      else if (k.hasAttribute('data-cookie-bewaar')) klaar(vink.checked);
+      else if (k.hasAttribute('data-cookie-kies')) { toon(true); vink.focus(); }
+    });
+    doc.addEventListener('click', function (e) {
+      var k = e.target.closest('[data-cookie-instellingen]');
+      if (!k) return;
+      e.preventDefault();
+      terug = k;
+      toon(true);
+      var h = $('.cookie__kop', c); if (h) h.focus();
+    });
+    if (!TS.toestemming.gekozen()) toon(false);
+  }
+
+  /* cookiepagina: toont de huidige keuze ([data-cookie-status]) */
+  function cookiestatus() {
+    var s = $('[data-cookie-status]');
+    if (!s) return;
+    var t = TS.toestemming.lees();
+    var datum = t ? t.datum.split('-').reverse().join('/') : '';
+    s.textContent = !t ? 'Je hebt nog geen keuze gemaakt.'
+      : (t.extern ? 'Je keuze van ' + datum + ': externe inhoud (zoals de kaart van Google Maps) mag laden.'
+        : 'Je keuze van ' + datum + ': alleen wat nodig is. Externe inhoud laadt pas als je erop klikt.');
+  }
+
   /* ---------------------------------------------------------------- start */
   function start() {
     tellers(); hartjes(); uren();
     kopScroll(); megamenu(); gsmMenu();
     hero(); merkTabs(); prijslijst(); strook();
-    formulieren(); wanden(); schuif(); stage(); merkIndex(); TS.rijen();
+    formulieren(); wanden(); schuif(); stage(); merkIndex(); TS.rijen(); extern(); cookiebanner(); cookiestatus();
     reveal();
     TS.emit('klaar', {});
   }

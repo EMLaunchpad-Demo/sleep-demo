@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="assets/img/site/apple-touch-icon-180.png">
 <script>document.documentElement.classList.add('js');if(location.protocol!=='file:'){['baskervville-latin','instrument-sans-latin'].forEach(function(n){var l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.crossOrigin='anonymous';l.href='assets/fonts/'+n+'.woff2';document.head.appendChild(l)})}</script>
 <style>@view-transition{navigation:auto}</style>
-<link rel="stylesheet" href="assets/css/site.css?v=20261111d">
+<link rel="stylesheet" href="assets/css/site.css?v=20261125a">
 </head>
 <body class="p-afrekenen" data-root="">
 <a class="skip" href="#inhoud">Naar de inhoud</a>
@@ -33,7 +33,7 @@
       <div class="kassa__leeg" data-kassa-leeg hidden>
         <p class="lead">Je winkelmand is leeg.</p>
         <p>Er valt nog niets af te rekenen. Kussens, dekbedden, hoeslakens en wasparfum bestel je hier gewoon online; een bed kies je liefst na het liggen in onze showroom in Heers.</p>
-        <p><a class="knop knop--vol" href="collectie/kussens.html">Bekijk de kussens</a> <a class="tlink" href="slaapadvies.html">Plan een slaapadvies</a></p>
+        <p><a class="knop knop--vol" href="collectie/kussens.html">Bekijk de kussens</a> <a class="tlink" href="bezoek.html">Kom langs in de showroom</a></p>
       </div>
       <form class="kassa__form" data-kassa novalidate>
         <section class="stap" data-stap="1" aria-labelledby="stap1-kop">
@@ -59,7 +59,7 @@
             <legend class="vh">Hoe ontvang je je bestelling?</legend>
             <label class="radiokaart"><input class="vh-input" type="radio" name="levering" value="afhalen" checked>
               <span class="radiokaart__tekst"><span class="radiokaart__kop">Afhalen in de winkel</span>
-              <span data-afhaal-tekst>Steenweg 49a, Heers. Gratis, klaar vanaf 24 uur na je bestelling, af te halen binnen 30 kalenderdagen.</span></span>
+              <span data-afhaal-tekst data-afhaal-adres="Steenweg 49A, Heers">Steenweg 49A, Heers. Gratis, klaar vanaf 24 uur na je bestelling, af te halen binnen 30 kalenderdagen.</span></span>
               <span class="radiokaart__prijs">Gratis</span><span class="radiokaart__vink"><svg class="ic" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>
             <label class="radiokaart" data-lev-klein><input class="vh-input" type="radio" name="levering" value="levering">
               <span class="radiokaart__tekst"><span class="radiokaart__kop">Levering in België</span>
@@ -94,12 +94,26 @@
 </main>
 <footer class="kassavoet">
   <ul class="kassavoet__links"><li><a href="verzenden.html">Verzenden</a></li><li><a href="betalen.html">Betalen</a></li><li><a href="retourneren.html">Retourneren</a></li><li><a href="algemene-voorwaarden.html">Algemene voorwaarden</a></li></ul>
-  <p class="voet__wet">© 2-Sleep · Voorbeeldshop door EM Launchpad<br>CBDO BV, handelend als 2-Sleep · btw BE0829.049.595</p>
+  <p class="voet__wet">© 2-Sleep Luxury Bedding, in samenwerking met EM Launchpad<br>CBDO BV, handelend als 2-Sleep · btw BE0829.049.595<br><button type="button" class="voet__cookies" data-cookie-instellingen>Cookie-instellingen</button></p>
 </footer>
+<section class="cookie" data-cookie aria-labelledby="cookie-kop" hidden>
+  <h2 class="cookie__kop" id="cookie-kop" tabindex="-1">Cookies</h2>
+  <p class="cookie__tekst">Je winkelmand en je bewaarde producten onthouden we in je eigen browser. Inhoud van andere diensten, zoals de kaart van Google Maps, laden we pas als je dat toestaat.</p>
+  <div class="cookie__keuzes" data-cookie-keuzes hidden>
+    <label class="cookie__keuze"><input type="checkbox" checked disabled><span class="cookie__naam">Noodzakelijk</span><span class="cookie__uitleg">Altijd aan. Je winkelmand, je bewaarde en recent bekeken producten, de slaapwijzer en deze keuze. Dat blijft in je eigen browser.</span></label>
+    <label class="cookie__keuze"><input type="checkbox" data-cookie-extern><span class="cookie__naam">Externe inhoud</span><span class="cookie__uitleg">De kaart van Google Maps. Die dienst kan dan cookies plaatsen en ziet je IP-adres.</span></label>
+  </div>
+  <div class="cookie__knoppen">
+    <button type="button" class="knop knop--zacht cookie__bewaar" data-cookie-bewaar hidden>Bewaar mijn keuze</button>
+    <button type="button" class="knop knop--vol" data-cookie-alles>Alles toestaan</button>
+    <button type="button" class="knop knop--vol" data-cookie-nodig>Alleen noodzakelijk</button>
+  </div>
+  <p class="cookie__meer"><button type="button" class="tlink" data-cookie-kies>Zelf kiezen</button><a class="tlink" href="cookies.html">Cookie policy</a></p>
+</section>
 <div class="vh" aria-live="polite" data-live></div>
-<script src="assets/js/site.js?v=20261111d" defer></script>
-<script src="assets/js/mand.js?v=20261111d" defer></script>
-<script src="assets/js/zoeken.js?v=20261111d" defer></script>
-<script src="assets/js/afrekenen.js?v=20261111d" defer></script>
+<script src="assets/js/site.js?v=20261125a" defer></script>
+<script src="assets/js/mand.js?v=20261125a" defer></script>
+<script src="assets/js/zoeken.js?v=20261125a" defer></script>
+<script src="assets/js/afrekenen.js?v=20261125a" defer></script>
 </body>
 </html>

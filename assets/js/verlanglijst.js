@@ -1,6 +1,6 @@
 /* 2-Sleep voorbeeldshop · verlanglijst (bouwer 2).
    Toont de bewaarde producten (2s.bewaard) als kaarten, met "In winkelmand" (alleen bij één variant) of "Kies je maat",
-   "Verwijder" en bovenaan "Leg klaar voor mijn bezoek" (naar slaapadvies.html?lijst=...). Daaronder recent bekeken. */
+   "Verwijder" en bovenaan "Kom ze testen in Heers" (naar bezoek.html, geen afspraak). Daaronder recent bekeken. */
 (function () {
   'use strict';
   var TS = window.TS;
@@ -13,7 +13,7 @@
     var actie;
     if (item) actie = '<button type="button" class="knop knop--zacht" data-bw-mand="' + p.handle + '">In winkelmand<span class="vh"> ' + esc(p.brand + ' ' + p.nameShort) + '</span></button>';
     else if (p.status === 'beschikbaar') actie = '<a class="knop knop--zacht" href="' + TS.productUrl(p.handle) + '">Kies je maat<span class="vh"> voor ' + esc(p.brand + ' ' + p.nameShort) + '</span></a>';
-    else actie = '<a class="knop knop--zacht" href="' + R + 'slaapadvies.html?lijst=' + p.handle + '">Vraag naar een alternatief</a>';
+    else actie = '<a class="knop knop--zacht" href="' + R + 'bezoek.html#contact">Vraag naar een alternatief</a>';
     return '<li class="bkaart">' + TS.kaart(p, { sizes: '(min-width: 1280px) 23vw, (min-width: 768px) 31vw, 47vw' }) +
       '<div class="bkaart__acties">' + actie +
       '<button type="button" class="tlink" data-bw-weg="' + p.handle + '">Verwijder<span class="vh"> ' + esc(p.brand + ' ' + p.nameShort) + '</span></button></div></li>';
@@ -30,7 +30,7 @@
     } else {
       var n = lijst.length;
       mount.innerHTML = '<div class="bewaard__balk"><p class="bewaard__tel">' + n + (n === 1 ? ' product bewaard' : ' producten bewaard') + '</p>' +
-        '<a class="knop knop--vol" href="' + R + 'slaapadvies.html?lijst=' + lijst.map(function (p) { return p.handle; }).join(',') + '">Leg klaar voor mijn bezoek</a></div>' +
+        '<a class="knop knop--vol" href="' + R + 'bezoek.html">Kom ze testen in Heers</a></div>' +
         '<h2 class="vh">Je bewaarde producten</h2><ul class="raster">' + lijst.map(kaart).join('') + '</ul>';
     }
     TS.hartjes();

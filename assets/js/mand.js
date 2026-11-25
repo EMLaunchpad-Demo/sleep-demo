@@ -265,7 +265,7 @@
         '<p>Textiel, kussens en wasparfum bestel je hier gewoon online. Een bed kies je liefst na het liggen: kom gerust langs in Heers.</p>' +
         '<ul class="mleeg__links"><li><a class="tlink" href="' + R + 'collectie/kussens.html">Bekijk de kussens</a></li>' +
         '<li><a class="tlink" href="' + R + 'index.html#afdelingen">Alle afdelingen</a></li>' +
-        '<li><a class="tlink" href="' + R + 'slaapadvies.html">Plan een slaapadvies</a></li></ul></div>' +
+        '<li><a class="tlink" href="' + R + 'bezoek.html">Kom langs in de showroom</a></li></ul></div>' +
         (f ? '<figure class="mp__leegfoto"><img src="' + esc(f) + '" alt="' + esc(pagina.getAttribute('data-leeg-alt') || '') + '" width="900" height="1125" loading="lazy" decoding="async"></figure>' : '') +
         '</div>';
     } else {

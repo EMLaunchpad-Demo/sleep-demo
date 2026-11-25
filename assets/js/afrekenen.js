@@ -14,6 +14,9 @@
   var leegVak = $('[data-kassa-leeg]');
   var huidig = 1;
   var NAMEN = { 1: 'Gegevens', 2: 'Levering', 3: 'Overzicht' };
+  /* afhaaladres komt uit inhoud.py (ADRES_KORT, één plaats), via data-afhaal-adres */
+  var afEl = $('[data-afhaal-tekst]', form);
+  var AFHAAL = (afEl && afEl.getAttribute('data-afhaal-adres')) || 'Heers';
 
   /* ---------------------------------------------------------------- velden controleren (bij het verlaten van een veld) */
   var BOODSCHAP = {
@@ -88,7 +91,7 @@
     klein.hidden = bed; groot.hidden = !bed;
     /* een bed is geen pakje: geen "klaar vanaf 24 uur" bij afhalen */
     var af = $('[data-afhaal-tekst]', form);
-    if (af) af.textContent = bed ? 'Steenweg 49a, Heers. Gratis.' : 'Steenweg 49a, Heers. Gratis, klaar vanaf 24 uur na je bestelling, af te halen binnen 30 kalenderdagen.';
+    if (af) af.textContent = bed ? AFHAAL + '. Gratis.' : AFHAAL + '. Gratis, klaar vanaf 24 uur na je bestelling, af te halen binnen 30 kalenderdagen.';
     var p = $('[data-lev-prijs]', klein);
     if (p) p.textContent = sub >= LEV.gratisVanaf ? 'Gratis' : 'Minimaal ' + TS.prijs(LEV.minKost);
     var k = keuze();
@@ -117,7 +120,7 @@
     var k = keuze(), l = leveringTekst();
     var naam = [waarde('k-voornaam'), waarde('k-achternaam')].filter(Boolean).join(' ');
     var adres = [waarde('k-straat'), [waarde('k-postcode'), waarde('k-gemeente')].filter(Boolean).join(' '), 'België'].filter(Boolean);
-    var lev = k === 'afhalen' ? ['Steenweg 49a, Heers', TS.mand.heeftBed() ? 'Gratis.' : 'Gratis, klaar vanaf 24 uur na je bestelling.'] :
+    var lev = k === 'afhalen' ? [AFHAAL, TS.mand.heeftBed() ? 'Gratis.' : 'Gratis, klaar vanaf 24 uur na je bestelling.'] :
       (k === 'levering-bed' ? ['Elke levering verzorgen we zelf.', 'Vanaf 30 kg treffen we een aparte regeling.'] : ['Naar het adres hierboven.', l.prijs === 'Gratis' ? 'Gratis.' : l.prijs + '.']);
     $('[data-samen]', form).innerHTML =
       '<div class="samen__blok"><p class="samen__kop">Contact</p><p>' + esc(naam) + '</p><p>' + esc(waarde('k-mail')) + '</p>' + (waarde('k-tel') ? '<p>' + esc(waarde('k-tel')) + '</p>' : '') +

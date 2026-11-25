@@ -531,13 +531,12 @@
         '<div class="trij__acties"><button class="hart" type="button" data-bewaar="' + p.handle + '" aria-pressed="false" aria-label="Bewaar ' + esc(p.brand + ' ' + p.nameShort) + '">' + TS.icoon('hart') + '</button>' +
         (item ? '<button type="button" class="tlink trij__mand" data-w-mand="' + p.handle + '">In mand<span class="vh"> ' + esc(p.brand + ' ' + p.nameShort) + '</span></button>' : '') + '</div></li>';
     }).join('');
-    var lijstUrl = R + 'slaapadvies.html?lijst=' + handles.join(',');
     res.innerHTML = '<div class="testlijst vel"><' + HK + ' class="testlijst__kop" tabindex="-1" data-w-kop>Je testlijst</' + HK + '>' +
       '<p class="testlijst__intro">' + n_(r.lijst.length, w) + ' uit onze collectie voor: ' + esc(keuzes.join(' · ')) + '.</p>' +
       (ruim ? '<p class="testlijst__ruim" role="status">' + esc(ruim) + '</p>' : '') +
       '<ol class="trijen">' + rijen + '</ol>' +
       '<p class="testlijst__noot">' + P.noot + '</p>' +
-      '<div class="testlijst__knoppen"><a class="knop knop--vol" href="' + lijstUrl + '">Plan een slaapadvies met deze lijst</a>' +
+      '<div class="testlijst__knoppen"><a class="knop knop--vol" href="' + R + 'bezoek.html">Kom ze testen in Heers</a>' +
       '<button type="button" class="knop knop--zacht" data-w-bewaaralles>Bewaar alles</button>' +
       '<button type="button" class="tlink" data-w-opnieuw>Opnieuw</button>' +
       '<a class="tlink" href="' + R + P.url + '">Bekijk alle ' + esc(P.alle[1]) + '</a></div></div>' +
