@@ -363,36 +363,6 @@
     m.addEventListener('keydown', function (e) { if (e.key === 'Escape') sluit(); TS.focusVal(m, e); });
   }
 
-  /* ---------------------------------------------------------------- home: afdelingen met vaste foto (desktop) */
-  function afdFoto() {
-    var vak = $('[data-afd-foto]');
-    var afd = $('#afdelingen');
-    if (!vak || !afd) return;
-    var lagen = $('.afd-foto__lagen', vak);
-    var huidig = lagen.querySelector('.is-aan');
-    var breed = window.matchMedia('(min-width: 1024px)');
-    function laag(src, alt) {
-      var l = $$('img', lagen).filter(function (x) { return x.getAttribute('src') === src; })[0];
-      if (!l) {
-        l = doc.createElement('img');
-        l.className = 'afd-foto__laag'; l.src = src; l.alt = alt || ''; l.decoding = 'async';
-        lagen.appendChild(l);
-      }
-      return l;
-    }
-    function toon(src, alt) {
-      if (!breed.matches) return; /* op gsm en tablet staat de foto niet in beeld: niets laden */
-      var l = laag(src, alt);
-      if (l === huidig) return;
-      var zet = function () { if (huidig) huidig.classList.remove('is-aan'); l.classList.add('is-aan'); huidig = l; };
-      if (l.complete) zet(); else l.addEventListener('load', zet, { once: true });
-    }
-    $$('[data-foto]', afd).forEach(function (a) {
-      function zet() { toon(a.getAttribute('data-foto'), a.getAttribute('data-foto-alt')); }
-      a.addEventListener('mouseenter', zet); a.addEventListener('focus', zet);
-    });
-  }
-
   /* ---------------------------------------------------------------- home: wandel door de showroom
      De sectie is een paar schermen hoog en haar binnenkant kleeft; de gewone scroll van de pagina bepaalt hoe ver het
      spoor met foto's naar links schuift. Bij reduced motion of zonder JS toont de CSS de gewone versie (foto's onder
@@ -834,7 +804,7 @@
   function start() {
     tellers(); hartjes(); uren();
     kopScroll(); megamenu(); gsmMenu();
-    afdFoto(); wandel(); merkTabs(); prijslijst(); strook();
+    wandel(); merkTabs(); prijslijst(); strook();
     formulieren(); wanden(); schuif(); stage(); merkIndex(); TS.rijen(); extern(); cookiebanner(); cookiestatus();
     reveal();
     TS.emit('klaar', {});

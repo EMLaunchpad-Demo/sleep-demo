@@ -278,36 +278,91 @@ strong { font-weight: 600; }
 }
 @media (prefers-reduced-motion: reduce) { .wandel__spoor, .wandel__beeld img { transform: none !important; } }
 
-/* ------------------------------------------------------------------ home: afdelingen met vaste foto (desktop) */
-.afd-sectie { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 0 var(--margin); align-items: start; }
-.afd-sectie .afdelingen { grid-column: 1; grid-row: 1; }
-.afd-foto { grid-column: 2; grid-row: 1; position: sticky; top: calc(var(--kop-h) + 12px); margin-top: clamp(48px, 8vw, 120px);
-  height: calc(100vh - var(--kop-h) - 24px); height: calc(100svh - var(--kop-h) - 24px); overflow: hidden; background: var(--tile); }
-.afd-foto__lagen { position: absolute; inset: 0; }
-.afd-foto__laag { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 600ms ease; }
-.afd-foto__laag.is-aan { opacity: 1; }
-
-.afdelingen { padding: clamp(48px, 8vw, 120px) 0 clamp(72px, 10vw, 140px); text-align: center; }
-.afdelingen__kop { margin-bottom: 56px; }
-.afd__groep + .afd__groep { margin-top: 56px; }
-.afd__kop { font-size: var(--step-lead); margin-bottom: 16px; }
-.afd__lijst { max-width: 420px; margin: 0 auto; text-align: left; }
-.afd__rij { display: grid; grid-template-columns: 1fr auto; column-gap: 16px; padding: 10px 12px; min-height: 48px; text-decoration: none;
-  transition: background-color var(--t-hover) ease; }
-.afd__rij:hover, .afd__rij:focus-visible { background: var(--tile); }
-.afd__naam { font-weight: 500; }
-.afd__prijs { color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.afd__n { grid-column: 1 / -1; color: var(--muted); font-size: var(--step-small); }
-.afdelingen__voet { margin-top: 56px; font-size: var(--step-small); }
-.afdelingen__voet .tlink, .merken__alle, .rij__kop .tlink { display: inline-flex; align-items: center; min-height: 44px; }
-
-@media (max-width: 1023px) {
-  .afd-sectie { display: block; }
-  .afd-foto { display: none; }
-  .afdelingen { max-width: 640px; margin: 0 auto; padding-top: 64px; }
+/* ------------------------------------------------------------------ home: afdelingen als raster met tegels (26/11/2026)
+   Zoals de categoriepagina van een webshop: gsm 2 kolommen, tablet 3, desktop 4. Elke gewone tegel is een subgrid van
+   drie rijen (foto 4:5, naam, aantal en prijs), zodat namen en prijzen per rij op één lijn staan, ook als een naam op
+   twee regels valt. Showroommodellen en promoties (.tegel--uit): foto over de hele tegel en de tekst op een petrolvlak;
+   gsm en desktop over twee kolommen, tablet één. De cel "Op maat" sluit het raster af, zodat elke rij vol is.
+   Hover: de foto zoomt zacht in (niet bij reduced motion). */
+/* marge (geen padding) boven de sectie: de knoppen "Collectie" in de hero (#afdelingen) landen zo met de kop bovenaan */
+.afd { --rij: clamp(32px, 3.4vw, 56px); padding: 0 var(--margin); max-width: 1680px; margin: clamp(72px, 9vw, 128px) auto 0; }
+.afd__kop { margin-bottom: clamp(24px, 3vw, 48px); }
+.afd__raster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 0; }
+.tegel { grid-row: span 3; display: grid; grid-template-rows: subgrid; min-width: 0; margin-bottom: var(--rij); }
+.tegel__link { grid-row: 1 / -1; display: grid; grid-template-rows: subgrid; min-width: 0; color: var(--ink); text-decoration: none; }
+.tegel__link:focus-visible { outline-offset: 4px; }
+.tegel__beeld { display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--tile); }
+.tegel__beeld img { width: 100%; height: 100%; object-fit: cover; transition: transform 900ms var(--ease-soft); }
+.tegel__naam { display: block; margin-top: 14px; font-family: var(--font-display); font-size: var(--step-lead); line-height: 1.2;
+  overflow-wrap: break-word; }
+.tegel__link:hover .tegel__naam { text-decoration: underline; text-decoration-thickness: .05em; text-underline-offset: .18em; }
+.tegel__meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 12px; margin-top: 4px;
+  font-size: var(--step-small); }
+.tegel__n { color: var(--muted); overflow-wrap: break-word; min-width: 0; }
+.tegel__prijs { color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .tegel__link:hover .tegel__beeld img, .tegel__link:focus-visible .tegel__beeld img { transform: scale(1.05); }
 }
-/* desktop: geen leeg gat tussen de afdelingenkaart en de merken */
-@media (min-width: 1024px) { .afdelingen { padding-bottom: 64px; } .afd-sectie + .merken { margin-top: clamp(56px, 6vw, 96px); } }
+
+/* uitgelicht: showroommodellen en promoties */
+.tegel--uit { grid-column: span 2; display: flex; flex-direction: column; }
+.tegel--uit .tegel__link { position: relative; display: block; flex: 1 0 auto; aspect-ratio: 3 / 2; overflow: hidden;
+  background: var(--ink-field); color: var(--on-dark); }
+.tegel--uit .tegel__beeld { position: absolute; inset: 0; aspect-ratio: auto; }
+.tegel__vlak { position: absolute; left: 0; bottom: 0; max-width: min(100%, 30rem); display: grid; gap: 6px;
+  padding: 16px 18px 18px; background: var(--night); color: var(--on-dark); }
+.tegel--uit .tegel__naam { margin: 0; font-size: clamp(1.5rem, 1.1rem + 1.3vw, 2.25rem); line-height: 1.05; }
+.tegel__zin { font-size: var(--step-small); line-height: 1.45; }
+.tegel--uit .tegel__meta { margin-top: 2px; justify-content: flex-start; gap: 0 14px; }
+.tegel--uit .tegel__n { color: var(--mist); }
+.tegel--uit .tegel__prijs { color: var(--on-dark); }
+
+/* op maat: sluit het raster af (kop, twee foto's als versiering, twee links); neemt de hoogte van zijn rij, groeit niet mee */
+.tegel--opmaat { display: block; contain: size; }
+.opmaat { height: 100%; display: flex; flex-direction: column; gap: 14px; padding: clamp(16px, 2vw, 28px); background: var(--tile); overflow: hidden; }
+.opmaat__kop { margin: 0; font-family: var(--font-display); font-size: var(--step-lead); line-height: 1.1; }
+.opmaat__noot { margin: -10px 0 0; font-size: var(--step-small); color: var(--muted); }
+.opmaat__beeld { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.opmaat__beeld > span { min-height: 0; overflow: hidden; }
+.opmaat__beeld img { width: 100%; height: 100%; object-fit: cover; }
+.opmaat__lijst { display: grid; gap: 10px; }
+.opmaat__lijst a { display: grid; gap: 2px; text-decoration: none; }
+.opmaat__naam { font-family: var(--font-display); font-size: clamp(1.0625rem, 1rem + .35vw, 1.25rem); line-height: 1.2; text-decoration: underline;
+  text-decoration-thickness: .05em; text-underline-offset: .18em; }
+.opmaat__lijst a:hover .opmaat__naam { text-decoration-thickness: .1em; }
+.opmaat__zin { font-size: var(--step-small); color: var(--muted); }
+.opmaat .nw { white-space: nowrap; }
+@media (max-width: 1023px) { .opmaat__zin { display: none; } }
+@media (max-width: 767px) {
+  .tegel__naam { font-size: 1.0625rem; margin-top: 10px; }
+  .tegel__meta { flex-direction: column; margin-top: 2px; }
+  .tegel--uit .tegel__meta { flex-direction: row; }
+  .tegel--uit .tegel__naam { font-size: 1.625rem; }
+  .tegel__zin { display: none; }
+  .opmaat { gap: 10px; }
+  .opmaat__kop { font-size: 1.25rem; }
+  .opmaat__noot { margin-top: -6px; }
+  .opmaat__beeld { display: none; }
+  .opmaat__lijst { margin-top: auto; }
+  .opmaat__naam { font-size: 1rem; }
+}
+@media (min-width: 768px) {
+  .afd__raster { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gutter); }
+  .tegel__vlak { padding: 20px 24px 22px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tegel--uit { grid-column: auto; }
+  .tegel--uit .tegel__link { aspect-ratio: 4 / 5; }
+  .tegel--uit .tegel__naam { font-size: 1.375rem; }
+  .tegel__zin { display: none; }
+  .tegel__vlak { padding: 16px 18px 18px; }
+}
+@media (min-width: 1024px) {
+  .afd__raster { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tegel--uit .tegel__link { aspect-ratio: 16 / 10; }
+}
+.afd + .merken { margin-top: clamp(40px, 5vw, 96px); }
+.merken__alle, .rij__kop .tlink { display: inline-flex; align-items: center; min-height: 44px; }
 
 /* merken */
 .merken { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 88svh; margin-top: var(--space-section); }
