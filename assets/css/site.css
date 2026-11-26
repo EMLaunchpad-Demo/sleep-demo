@@ -257,7 +257,7 @@ strong { font-weight: 600; }
 @media (min-width: 768px) { .wandel__spoor { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 64px var(--gutter); } }
 @media (max-aspect-ratio: 3/4) { .wandel__beeld img { aspect-ratio: 3 / 4; } }
 @media (prefers-reduced-motion: no-preference) {
-  .js .wandel { padding: 0; height: calc(100vh + (var(--dias) - 1) * 60vh); height: calc(100svh + (var(--dias) - 1) * 60svh); }
+  .js .wandel { padding: 0; height: calc(100vh + (var(--dias) - 1) * 70vh); height: calc(100svh + (var(--dias) - 1) * 70svh); }
   .js .wandel__plak { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
   .js .wandel__boven { position: absolute; z-index: 2; left: var(--margin); right: var(--margin); top: calc(var(--kop-h) + 20px);
     display: grid; gap: 14px; pointer-events: none; }

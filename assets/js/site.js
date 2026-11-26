@@ -386,24 +386,39 @@
       f = Math.min(1, Math.max(0, (f - RUST / 2) / (1 - RUST)));
       return i + f * f * (3 - 2 * f);
     }
-    function zet() {
-      tik = false;
+    /* soepel (26/11): de scroll bepaalt het doel, de foto's glijden er met wat naloop naartoe. Zo wordt elke tik van
+       een muiswiel of een schok van een touchpad een vloeiende beweging in plaats van een sprong. */
+    var nu = null, vorige = 0, TAU = 140;
+    function doel() {
       var r = s.getBoundingClientRect();
       var lengte = s.offsetHeight - plak.offsetHeight;
-      var p = lengte > 0 ? Math.min(1, Math.max(0, -r.top / lengte)) : 0;
+      var h = window.innerHeight;
+      if (r.top < h * 2.5 && r.bottom > -h) laad(n - 1); // alle foto's op tijd, zodat er onderweg niets hoeft te laden
+      return lengte > 0 ? Math.min(1, Math.max(0, -r.top / lengte)) : 0;
+    }
+    function teken(p) {
       var pos = glij(p * (n - 1));
-      spoor.style.transform = 'translate3d(' + (-pos * breed).toFixed(1) + 'px,0,0)';
+      spoor.style.transform = 'translate3d(' + (-pos * breed).toFixed(2) + 'px,0,0)';
       if (balk) balk.style.transform = 'scaleX(' + p.toFixed(4) + ')';
       /* het beeld schuift iets trager dan zijn dia: een lichte diepte, nooit verder dan de rand van de vergroting */
       for (var i = 0; i < n; i++) {
         var d = i - pos;
-        if (d > -1.2 && d < 1.2) beelden[i].style.transform = 'translate3d(' + (-d * 4.5).toFixed(2) + '%,0,0) scale(1.1)';
+        if (d > -1.2 && d < 1.2) beelden[i].style.transform = 'translate3d(' + (-d * 4.5).toFixed(3) + '%,0,0) scale(1.1)';
       }
-      var h = window.innerHeight;
-      if (r.top < h * 2 && r.bottom > -h) laad(Math.ceil(pos) + 2);
     }
-    function vraag() { if (!tik) { tik = true; requestAnimationFrame(zet); } }
-    function maat() { breed = plak.clientWidth; zet(); }
+    function zet(t) {
+      var p = doel();
+      var dt = vorige ? Math.min(64, t - vorige) : 16;
+      vorige = t;
+      if (nu === null || Math.abs(p - nu) > 0.5) nu = p; // eerste keer of grote sprong (anker, toets Home): meteen
+      else nu += (p - nu) * (1 - Math.exp(-dt / TAU));
+      if (Math.abs(p - nu) < 0.00005) nu = p;
+      teken(nu);
+      if (nu !== p) requestAnimationFrame(zet);
+      else { tik = false; vorige = 0; }
+    }
+    function vraag() { if (!tik) { tik = true; vorige = 0; requestAnimationFrame(zet); } }
+    function maat() { breed = plak.clientWidth; nu = doel(); teken(nu); }
     window.addEventListener('scroll', vraag, { passive: true });
     window.addEventListener('resize', maat);
     maat();
