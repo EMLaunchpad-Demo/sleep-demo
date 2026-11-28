@@ -103,6 +103,15 @@
     $$('[data-prijs], [data-balk-prijs]', main).forEach(function (el) { el.innerHTML = html; });
   }
 
+  function zetUit(inp, uit) {
+    inp.classList.toggle('is-uit', !!uit);
+    var lab = inp.nextElementSibling;
+    if (!lab || lab.tagName !== 'LABEL') return;
+    var sr = lab.querySelector('[data-uit-sr]');
+    if (uit && !sr) { sr = document.createElement('span'); sr.className = 'vh'; sr.setAttribute('data-uit-sr', ''); sr.textContent = ' (uitverkocht)'; lab.appendChild(sr); }
+    if (!uit && sr) sr.remove();
+  }
+
   function teken() {
     opties.forEach(function (o, oi) {
       if (o.type === 'vast') return;
@@ -129,9 +138,12 @@
       var fs2 = $('fieldset[data-optie="' + oi + '"]', form);
       if (!fs2) return;
       $$('input', fs2).forEach(function (inp) {
-        var kan = V.some(function (v) { return v.o[oi] === inp.value && pastBij(v, oi); });
+        var passend = V.filter(function (v) { return v.o[oi] === inp.value && pastBij(v, oi); });
+        var kan = passend.length > 0;
         inp.disabled = !kan && sel[oi] !== inp.value;
         inp.checked = sel[oi] === inp.value;
+        /* live voorraad: alle passende varianten uitverkocht = doorstreept, wel nog te kiezen (de knop zegt dan Uitverkocht) */
+        zetUit(inp, kan && passend.every(function (v) { return !v.a; }));
       });
       var g2 = $('[data-gekozen]', fs2);
       if (g2) g2.textContent = sel[oi] != null ? toon(sel[oi]) : (o.type === 'kleur' ? 'kies een kleur' : '');
@@ -143,6 +155,14 @@
       var uit = v && !v.a;
       knop.disabled = !!uit;
       knop.textContent = uit ? 'Uitverkocht' : 'In winkelmand';
+    }
+    var balkKnop = $('[data-balk-knop]', main);
+    if (balkKnop) {
+      var uit2 = v && !v.a;
+      balkKnop.disabled = !!uit2;
+      if (balkKnop._html == null) balkKnop._html = balkKnop.innerHTML;
+      var nieuw = uit2 ? 'Uitverkocht' : balkKnop._html;
+      if (balkKnop.innerHTML !== nieuw) balkKnop.innerHTML = nieuw;
     }
     return v;
   }
@@ -190,6 +210,28 @@
     });
     form.addEventListener('submit', function (e) { e.preventDefault(); inMand(); });
     teken();
+    live();
+  }
+
+  /* ---------------- live prijs en beschikbaarheid uit Shopify (TS.shopify in site.js, schakelaar LIVE_ACTIEF).
+     Lukt het niet (geen verbinding, winkel traag, CORS), dan blijven de prijs en de beschikbaarheid van de bouw staan. */
+  function live() {
+    if (!TS.shopify || !TS.shopify.live) return;
+    main.setAttribute('data-shopify', 'laden');
+    TS.shopify.liveProduct(P.handle).then(function (l) {
+      if (!l || !l.ok) { main.setAttribute('data-shopify', 'terugval'); return; }
+      var n = 0;
+      V.forEach(function (v) {
+        var x = l.varianten[v.id];
+        if (x) { if (v.p !== x.p || v.c !== x.c || v.a !== x.a) n++; v.p = x.p; v.c = x.c; v.a = x.a; v.bron = x.bron; }
+        else if (!l.mislukt) { if (v.a) n++; v.a = false; v.weg = true; }   /* bestaat niet meer in Shopify */
+      });
+      main.setAttribute('data-shopify', l.mislukt ? 'deels' : 'ok');
+      main.setAttribute('data-shopify-gewijzigd', String(n));
+      teken();
+      var v = gekozenVariant(), melding = $('[data-koop-melding]', form);
+      if (v && !v.a && melding) melding.textContent = 'Deze uitvoering is uitverkocht.';
+    });
   }
 
   function ontbrekend() {
@@ -211,12 +253,12 @@
       return;
     }
     var v = gekozenVariant();
-    if (!v || !v.a) { if (melding) melding.textContent = 'Deze combinatie is niet beschikbaar.'; return; }
+    if (!v || !v.a) { if (melding) melding.textContent = v ? 'Deze uitvoering is uitverkocht.' : 'Deze combinatie is niet beschikbaar.'; return; }
     if (melding) melding.textContent = '';
     var beschr = opties.map(function (o, oi) { return o.type === 'vast' || o.values.length < 2 ? null : toon(waardeVan(oi)); }).filter(Boolean).join(' · ');
     var qty = parseInt(($('[data-aantal-veld]', form) || {}).value, 10) || 1;
     TS.mand.add({ handle: P.handle, variantId: v.id, name: P.name, brand: P.brand, variant: beschr, price: v.p, qty: qty,
-      thumb: P.thumb, mini: P.mini, bg: P.thumbBg, isBed: P.isBed, url: 'product/' + P.handle + '.html' });
+      thumb: P.thumb, mini: P.mini, bg: P.thumbBg, isBed: P.isBed, url: 'product/' + P.handle + '.html', bron: v.bron || null });
     var k = $('[data-in-mand]', form);
     if (k) {
       k.classList.add('is-toegevoegd');

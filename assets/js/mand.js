@@ -7,6 +7,25 @@
   var TS = window.TS;
   if (!TS || !TS.mand) return;
   var $ = TS.$, $$ = TS.$$, esc = TS.esc, doc = document, body = doc.body, R = TS.root || '';
+  /* koppeling met Shopify (site.js, TS.shopify): KASSA = echte kassa, dan geen voorbeeldzin; LIVE = mand nakijken */
+  var SH = TS.shopify || {}, KASSA = !!SH.kassa, LIVE = !!SH.live;
+  var meldingen = [];   /* zinnen over wat er in de mand veranderde (uitverkocht, prijs) */
+  function meldingenHtml() {
+    if (!meldingen.length) return '';
+    return '<div class="mwijz" role="status"><ul>' + meldingen.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>';
+  }
+  var nagekeken = false;
+  function kijkNa() {
+    if (!LIVE || nagekeken || !SH.controleerMand || !TS.mand.items().length) return;
+    nagekeken = true;
+    SH.controleerMand().then(function (r) {
+      if (!r.wijzigingen.length) return;
+      meldingen = r.wijzigingen.map(SH.wijzigingTekst);
+      if (open) tekenLade();
+      if (pagina) tekenPagina();
+      TS.meld(meldingen.join(' '));
+    });
+  }
 
   var LEV = TS.levering = {
     gratisVanaf: (window.SITE && window.SITE.freeShippingFrom) || 70,
@@ -213,13 +232,13 @@
       }
       return;
     }
-    lijf.innerHTML = TS.mandRegels(items) + '<div style="margin-top:24px">' + leveringHtml() + '</div>';
+    lijf.innerHTML = meldingenHtml() + TS.mandRegels(items) + '<div style="margin-top:24px">' + leveringHtml() + '</div>';
     voet.hidden = false;
     voet.innerHTML = somHtml() +
       '<p class="lade__btw">Prijzen incl. btw. Levering of gratis afhalen in Heers kies je bij het afrekenen.</p>' +
       '<a class="knop knop--vol" href="' + R + 'afrekenen.html">Afrekenen</a>' +
       '<div class="lade__links"><a class="tlink" href="' + R + 'winkelmand.html">Bekijk je winkelmand</a><button type="button" class="tlink" data-lade-sluit>Verder winkelen</button></div>' +
-      '<p class="lade__voorbeeld">Voorbeeldshop: er wordt niets besteld of betaald.</p>';
+      (KASSA ? '' : '<p class="lade__voorbeeld">Voorbeeldshop: er wordt niets besteld of betaald.</p>');
     if (nieuwKey && !TS.reduce) {
       var r = $$('.mregel', lijf).filter(function (li) { return li.getAttribute('data-key') === nieuwKey; })[0];
       if (r) { r.classList.add('is-nieuw'); r.scrollIntoView({ block: 'nearest' }); }
@@ -234,6 +253,7 @@
     tekenLade();
     if (open) { lade._kop.focus(); return; }
     open = true;
+    kijkNa();
     lade.hidden = false; scrim.hidden = false;
     body.classList.add('is-laag-open');
     void lade.offsetWidth;
@@ -261,7 +281,7 @@
     if (kop) kop.textContent = items.length ? 'Winkelmand (' + TS.mand.count() + ')' : 'Winkelmand';
     if (!items.length) {
       var f = pagina.getAttribute('data-leeg-foto');
-      pagina.innerHTML = '<div class="mp__leeg"><div class="mp__leegtekst"><p class="lead">Je winkelmand is leeg.</p>' +
+      pagina.innerHTML = '<div class="mp__leeg"><div class="mp__leegtekst">' + meldingenHtml() + '<p class="lead">Je winkelmand is leeg.</p>' +
         '<p>Textiel, kussens en wasparfum bestel je hier gewoon online. Een bed kies je liefst na het liggen: kom gerust langs in Heers.</p>' +
         '<ul class="mleeg__links"><li><a class="tlink" href="' + R + 'collectie/kussens.html">Bekijk de kussens</a></li>' +
         '<li><a class="tlink" href="' + R + 'index.html#afdelingen">Alle afdelingen</a></li>' +
@@ -269,7 +289,7 @@
         (f ? '<figure class="mp__leegfoto"><img src="' + esc(f) + '" alt="' + esc(pagina.getAttribute('data-leeg-alt') || '') + '" width="900" height="1125" loading="lazy" decoding="async"></figure>' : '') +
         '</div>';
     } else {
-      pagina.innerHTML = '<section class="mp__regels" aria-labelledby="mp-regels-kop"><h2 id="mp-regels-kop" class="vh">Producten in je winkelmand</h2>' + TS.mandRegels(items, true) + '</section>' +
+      pagina.innerHTML = '<section class="mp__regels" aria-labelledby="mp-regels-kop"><h2 id="mp-regels-kop" class="vh">Producten in je winkelmand</h2>' + meldingenHtml() + TS.mandRegels(items, true) + '</section>' +
         '<aside class="mp__som" aria-labelledby="mp-som-kop"><h2 id="mp-som-kop">Overzicht</h2>' + leveringHtml() + somHtml() +
         '<p class="lade__btw">Prijzen incl. btw. Levering of gratis afhalen in Heers kies je bij het afrekenen.</p>' +
         '<a class="knop knop--vol" href="' + R + 'afrekenen.html">Afrekenen</a>' +
@@ -280,7 +300,7 @@
           '<li>' + icoon('levering') + '<span>Gratis levering in België vanaf € 70</span></li>' +
           '<li>' + icoon('retour') + '<span>14 dagen retour in de originele, ongeopende verpakking</span></li>') +
         '</ul>' +
-        '<p class="lade__voorbeeld">Voorbeeldshop: er wordt niets besteld of betaald.</p></aside>';
+        (KASSA ? '' : '<p class="lade__voorbeeld">Voorbeeldshop: er wordt niets besteld of betaald.</p>') + '</aside>';
     }
     tekenRecent(items.map(function (x) { return x.handle; }));
   }
@@ -296,6 +316,7 @@
   if (pagina) {
     bedien(pagina);
     tekenPagina();
+    kijkNa();
   }
 
   /* ---------------------------------------------------------------- koppelingen */

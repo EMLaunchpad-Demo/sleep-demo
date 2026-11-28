@@ -18,6 +18,59 @@
   var afEl = $('[data-afhaal-tekst]', form);
   var AFHAAL = (afEl && afEl.getAttribute('data-afhaal-adres')) || 'Heers';
 
+  /* ---------------------------------------------------------------- echte kassa van Shopify (28/11/2026)
+     Staat KASSA_ACTIEF aan (site.js, TS.shopify), dan vragen we hier geen gegevens: de mand wordt nagekeken
+     (live prijs en voorraad, als LIVE_ACTIEF aan staat) en we sturen door naar de kassalink van Shopify.
+     Gegevens, levering of afhalen en betalen gebeuren daar. Er gaat niets van de klant in de URL. */
+  if (TS.shopify && TS.shopify.kassa) { naarShopify(); return; }
+
+  function naarShopify() {
+    var balk = $('.kassabalk');
+    if (balk) balk.hidden = true;
+    form.hidden = true; voortgang.hidden = true; if (tel) tel.hidden = true; ovVak.hidden = true;
+    var vak = doc.createElement('section');
+    vak.className = 'kassa__shopify';
+    vak.setAttribute('aria-live', 'polite');
+    form.parentNode.insertBefore(vak, form);
+    function regels(items) {
+      return '<ul class="ovregels">' + items.map(function (x) {
+        return '<li class="ovregel">' + TS.miniPlaat(x) + '<span><span class="ovregel__naam">' + esc(x.name) + '</span>' +
+          '<span class="ovregel__meta">' + esc([x.brand, x.variant].filter(Boolean).join(' · ')) + ((x.qty || 1) > 1 ? ' · ' + x.qty + ' stuks' : '') + '</span></span>' +
+          '<span class="prijs">' + TS.prijs(x.price * (x.qty || 1)) + '</span></li>';
+      }).join('') + '</ul>';
+    }
+    function leeg() {
+      vak.hidden = true; leegVak.hidden = false;
+      var lf = $('[data-kassa-leegfoto]'); if (lf) lf.hidden = false;
+    }
+    if (!TS.mand.items().length) { leeg(); return; }
+    vak.innerHTML = '<p class="lead">We kijken de prijzen en de voorraad van je winkelmand na.</p>';
+    TS.shopify.controleerMand().then(function (r) {
+      var items = TS.mand.items();
+      if (!items.length) {
+        leeg();
+        if (r.wijzigingen.length) leegVak.insertAdjacentHTML('afterbegin', '<div class="mwijz" role="status"><ul>' +
+          r.wijzigingen.map(function (w) { return '<li>' + esc(TS.shopify.wijzigingTekst(w)) + '</li>'; }).join('') + '</ul></div>');
+        return;
+      }
+      var link = TS.shopify.kassaLink(items);
+      if (!link) { vak.innerHTML = '<p class="lead">Deze winkelmand kan niet naar de kassa. Mail ons gerust: <a href="mailto:info@2-sleep.be">info@2-sleep.be</a>.</p>'; return; }
+      if (!r.wijzigingen.length) {
+        /* niets veranderd: meteen door (replace: de knop Terug van de browser komt niet opnieuw hier) */
+        vak.innerHTML = '<p class="lead">Je gaat naar de kassa.</p><p><a class="tlink" href="' + esc(link) + '">Gebeurt er niets? Ga naar de kassa.</a></p>';
+        window.location.replace(link);
+        return;
+      }
+      vak.innerHTML = '<div class="mwijz" role="status"><p>Sinds je dit in je winkelmand legde, is er iets veranderd:</p><ul>' +
+        r.wijzigingen.map(function (w) { return '<li>' + esc(TS.shopify.wijzigingTekst(w)) + '</li>'; }).join('') + '</ul></div>' +
+        '<h2 class="kassa__shopify-kop">Je winkelmand</h2>' + regels(items) +
+        '<p class="msom"><span class="msom__label">Subtotaal</span><span class="msom__bedrag">' + TS.prijs(TS.mand.subtotal()) + '</span></p>' +
+        '<p class="kassa__shopify-knoppen"><a class="knop knop--vol" href="' + esc(link) + '">Verder naar de kassa</a> ' +
+        '<a class="tlink" href="' + R + 'winkelmand.html">Terug naar je winkelmand</a></p>' +
+        '<p class="kassa__betaal">In de kassa vul je je gegevens in, kies je hoe je je bestelling ontvangt en betaal je.</p>';
+    });
+  }
+
   /* ---------------------------------------------------------------- velden controleren (bij het verlaten van een veld) */
   var BOODSCHAP = {
     'k-mail': 'Vul je e-mailadres in.', 'k-voornaam': 'Vul je voornaam in.', 'k-achternaam': 'Vul je achternaam in.',

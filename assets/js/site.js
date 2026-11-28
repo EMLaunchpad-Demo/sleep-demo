@@ -1,6 +1,7 @@
 /* 2-Sleep voorbeeldshop · kern-JS (bouwer 1).
    window.TS is de gedeelde laag waar de andere scripts (mand.js, zoeken.js, slaapwijzer.js, ... van bouwer 2) op inhaken.
-   Geen fetch, geen externe bibliotheken; alles werkt via file://, localhost en een subpad. */
+   Geen externe bibliotheken; alles werkt via file://, localhost en een subpad. Enige fetch: de live prijs en voorraad
+   uit Shopify (TS.shopify), alleen als LIVE_ACTIEF aan staat; anders gaat er niets naar buiten. */
 (function () {
   'use strict';
   var TS = window.TS = window.TS || {};
@@ -124,6 +125,175 @@
     return TS._idx[h] || null;
   };
   TS.productUrl = function (h) { return ROOT + 'product/' + h + '.html'; };
+
+  /* ---------------------------------------------------------------- koppeling met Shopify (28/11/2026, optie a)
+     Producten, prijzen, voorraad, kassa, betalingen en klantenaccounts blijven in Shopify; deze site is de voorkant.
+     INSTELLINGEN (de enige plaats):
+       WINKEL        domein van de Shopify-winkel, zonder https:// (nu 2-sleep.be; na de verhuis bv. winkel.2-sleep.be
+                     of 2-sleep-slaapcomfort.myshopify.com).
+       KASSA_ACTIEF  false = "Afrekenen" toont de voorbeeldkassa met de voorbeeldmelding (zoals de preview nu).
+                     true  = "Afrekenen" stuurt door naar de kassa van Shopify met de kassalink
+                             https://<WINKEL>/cart/<variantId>:<aantal>,<variantId>:<aantal>
+       LIVE_ACTIEF   true  = productpagina, winkelmand en kassa halen de actuele prijs en beschikbaarheid uit
+                             https://<WINKEL>/products/<shopify-handle>.js (publiek, zonder token, CORS werkt).
+                     false = de prijs en beschikbaarheid van de laatste bouw (zoals de preview nu).
+     Lokaal testen zonder deze regels te wijzigen (alleen op localhost, 127.0.0.1 of via file://):
+       ?shopify=aan zet KASSA_ACTIEF en LIVE_ACTIEF aan voor dit tabblad, ?shopify=uit zet ze weer uit. */
+  var SHOPIFY = { WINKEL: '2-sleep.be', KASSA_ACTIEF: false, LIVE_ACTIEF: false };
+
+  (function () {
+    var lokaal = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    var test = null;
+    if (lokaal) {
+      try {
+        var m = /[?&]shopify=(aan|uit)\b/.exec(location.search);
+        if (m) window.sessionStorage.setItem('2s.shopify.test', m[1]);
+        test = window.sessionStorage.getItem('2s.shopify.test');
+      } catch (e) { test = null; }
+    }
+    var aan = test === 'aan';
+    var W = String(SHOPIFY.WINKEL).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    var basis = 'https://' + W;
+    var BEWAAR = 10 * 60 * 1000;   /* live gegevens 10 minuten bewaren in dit tabblad */
+    var bronLaden = null, geheugen = {};
+
+    var S = TS.shopify = {
+      winkel: W,
+      kassa: !!SHOPIFY.KASSA_ACTIEF || aan,
+      live: !!SHOPIFY.LIVE_ACTIEF || aan,
+      test: aan
+    };
+
+    /* kassalink: dezelfde variant twee keer telt samen; regels zonder variantId gaan niet mee */
+    S.kassaLink = function (items) {
+      var som = {}, volgorde = [];
+      (items || []).forEach(function (x) {
+        var id = String(x.variantId || '').replace(/\D/g, '');
+        if (!id) return;
+        if (!(id in som)) { som[id] = 0; volgorde.push(id); }
+        som[id] += Math.max(1, parseInt(x.qty, 10) || 1);
+      });
+      if (!volgorde.length) return null;
+      return basis + '/cart/' + volgorde.map(function (id) { return id + ':' + Math.min(99, som[id]); }).join(',');
+    };
+
+    /* welke Shopify-producten horen bij een product van onze site (assets/js/shopify-bronnen.js, uit de catalogus) */
+    S.bronnen = function (handle) {
+      if (!bronLaden) {
+        bronLaden = window.SHOPIFY_BRONNEN ? Promise.resolve(window.SHOPIFY_BRONNEN) : new Promise(function (ok) {
+          var s = doc.createElement('script');
+          s.src = ROOT + 'assets/js/shopify-bronnen.js';
+          s.onload = function () { ok(window.SHOPIFY_BRONNEN || {}); };
+          s.onerror = function () { ok({}); };
+          doc.head.appendChild(s);
+        });
+      }
+      return bronLaden.then(function (m) { return (m && m[handle]) || []; });
+    };
+
+    /* één Shopify-product ophalen: {varianten: {id: {p, c, a}}} of null als het niet lukt (404 = weg) */
+    function haalBron(h) {
+      if (geheugen[h]) return geheugen[h];
+      var sleutel = '2s.live.' + h;
+      try {
+        var oud = JSON.parse(window.sessionStorage.getItem(sleutel) || 'null');
+        if (oud && Date.now() - oud.t < BEWAAR) return (geheugen[h] = Promise.resolve(oud.d));
+      } catch (e) { /* geen sessionStorage: gewoon ophalen */ }
+      var ctl = window.AbortController ? new AbortController() : null;
+      var klok = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : null;
+      geheugen[h] = fetch(basis + '/products/' + encodeURIComponent(h) + '.js', { credentials: 'omit', signal: ctl ? ctl.signal : undefined })
+        .then(function (r) {
+          if (r.status === 404) return { weg: true, varianten: {} };
+          if (!r.ok) throw new Error('status ' + r.status);
+          return r.json().then(function (j) {
+            var v = {};
+            (j.variants || []).forEach(function (x) {
+              v[x.id] = { p: x.price / 100, c: x.compare_at_price && x.compare_at_price > x.price ? x.compare_at_price / 100 : null, a: !!x.available };
+            });
+            return { weg: false, varianten: v };
+          });
+        })
+        .then(function (d) {
+          try { window.sessionStorage.setItem(sleutel, JSON.stringify({ t: Date.now(), d: d })); } catch (e) { /* vol of geblokkeerd */ }
+          return d;
+        })
+        .catch(function () { delete geheugen[h]; return null; })
+        .then(function (d) { if (klok) clearTimeout(klok); return d; });
+      return geheugen[h];
+    }
+
+    /* actuele gegevens van een product van onze site.
+       Antwoord: {ok, mislukt, varianten: {variantId: {p, c, a, bron}}, gekend: {bron: true}}.
+       Een variant die niet in "varianten" staat terwijl haar bron wel opgehaald werd, bestaat niet meer in Shopify. */
+    S.liveProduct = function (handle, alleen) {
+      if (!S.live || !window.fetch) return Promise.resolve(null);
+      return (alleen && alleen.length ? Promise.resolve(alleen) : S.bronnen(handle)).then(function (lijst) {
+        if (!lijst.length) return null;
+        var uit = { ok: 0, mislukt: 0, varianten: {}, gekend: {} };
+        var i = 0;
+        function volgende() {   /* hooguit 4 tegelijk, om de winkel niet te overvragen */
+          if (i >= lijst.length) return Promise.resolve();
+          var h = lijst[i++];
+          return haalBron(h).then(function (d) {
+            if (!d) { uit.mislukt++; return; }
+            uit.ok++; uit.gekend[h] = true;
+            Object.keys(d.varianten).forEach(function (id) { var x = d.varianten[id]; uit.varianten[id] = { p: x.p, c: x.c, a: x.a, bron: h }; });
+          }).then(volgende);
+        }
+        var lopers = [];
+        for (var k = 0; k < Math.min(4, lijst.length); k++) lopers.push(volgende());
+        return Promise.all(lopers).then(function () { return uit; });
+      });
+    };
+
+    /* winkelmand nakijken: uitverkochte of verdwenen varianten gaan eruit, prijzen worden bijgewerkt.
+       Antwoord: {nagekeken: bool, wijzigingen: [{soort: 'uitverkocht'|'weg'|'prijs', item, oud, nieuw}]} */
+    S.controleerMand = function () {
+      var items = TS.mand.items();
+      if (!S.live || !items.length) return Promise.resolve({ nagekeken: false, wijzigingen: [] });
+      var perHandle = {};
+      items.forEach(function (x) { (perHandle[x.handle] = perHandle[x.handle] || []).push(x); });
+      var handles = Object.keys(perHandle);
+      return Promise.all(handles.map(function (h) {
+        var bron = perHandle[h].map(function (x) { return x.bron; });
+        var alleBekend = bron.every(Boolean);
+        return S.liveProduct(h, alleBekend ? bron.filter(function (b, i) { return bron.indexOf(b) === i; }) : null);
+      })).then(function (res) {
+        var wijz = [], nagekeken = false, l = TS.mand.items();
+        var weg = {};
+        handles.forEach(function (h, i) {
+          var live = res[i];
+          if (!live || !live.ok) return;
+          nagekeken = true;
+          perHandle[h].forEach(function (x) {
+            var v = live.varianten[x.variantId];
+            if (!v) {
+              /* alleen "weg" als de bron van deze variant echt opgehaald is */
+              if (live.mislukt && !(x.bron && live.gekend[x.bron])) return;
+              weg[x.key] = 1; wijz.push({ soort: 'weg', item: x });
+              return;
+            }
+            if (!v.a) { weg[x.key] = 1; wijz.push({ soort: 'uitverkocht', item: x }); return; }
+            if (Math.abs(v.p - x.price) > 0.004) {
+              wijz.push({ soort: 'prijs', item: x, oud: x.price, nieuw: v.p });
+              l.forEach(function (y) { if (y.key === x.key) y.price = v.p; });
+            }
+            l.forEach(function (y) { if (y.key === x.key && !y.bron) y.bron = v.bron; });
+          });
+        });
+        if (nagekeken) TS.mand.save(l.filter(function (y) { return !weg[y.key]; }));
+        return { nagekeken: nagekeken, wijzigingen: wijz };
+      });
+    };
+
+    /* zin voor de klant per wijziging (zonder de naam van de winkelsoftware) */
+    S.wijzigingTekst = function (w) {
+      var naam = w.item.name + (w.item.variant ? ' (' + w.item.variant + ')' : '');
+      if (w.soort === 'uitverkocht') return naam + ' is intussen uitverkocht en is uit je winkelmand gehaald.';
+      if (w.soort === 'weg') return naam + ' is niet meer online te koop en is uit je winkelmand gehaald.';
+      return 'De prijs van ' + naam + ' is nu ' + TS.prijs(w.nieuw) + ' (was ' + TS.prijs(w.oud) + ').';
+    };
+  })();
 
   /* iconen (zelfde als in bouw.py) */
   var IC = {
