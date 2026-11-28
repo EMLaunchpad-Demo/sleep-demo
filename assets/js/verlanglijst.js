@@ -69,6 +69,7 @@
     }
   });
   TS.on('bewaard', teken);
+  TS.on('catalogus', teken);   /* live uit Shopify: nieuwe prijzen, verdwenen producten (shopify-live.js) */
   window.addEventListener('storage', function (e) { if (e.key === '2s.bewaard') teken(); });
   TS.loadCatalog().then(teken);
 })();

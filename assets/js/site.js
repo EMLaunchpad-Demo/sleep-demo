@@ -1,7 +1,7 @@
 /* 2-Sleep voorbeeldshop · kern-JS (bouwer 1).
    window.TS is de gedeelde laag waar de andere scripts (mand.js, zoeken.js, slaapwijzer.js, ... van bouwer 2) op inhaken.
-   Geen externe bibliotheken; alles werkt via file://, localhost en een subpad. Enige fetch: de live prijs en voorraad
-   uit Shopify (TS.shopify), alleen als LIVE_ACTIEF aan staat; anders gaat er niets naar buiten. */
+   Geen externe bibliotheken; alles werkt via file://, localhost en een subpad. Enige fetch: de live gegevens uit Shopify
+   (TS.shopify en assets/js/shopify-live.js), alleen als LIVE_ACTIEF aan staat; anders gaat er niets naar buiten. */
 (function () {
   'use strict';
   var TS = window.TS = window.TS || {};
@@ -124,19 +124,34 @@
     if (!TS._idx) { TS._idx = {}; window.CATALOG.products.forEach(function (p) { TS._idx[p.handle] = p; }); }
     return TS._idx[h] || null;
   };
-  TS.productUrl = function (h) { return ROOT + 'product/' + h + '.html'; };
+  TS.herIndex = function () { TS._idx = null; };
+  /* een nieuw product uit Shopify (niet in de bouw) heeft geen eigen pagina: product/index.html?p=<handle in Shopify> */
+  TS.productUrl = function (h) {
+    var p = TS.product(h);
+    if (p && p.shopifyHandle) return ROOT + 'product/index.html?p=' + encodeURIComponent(p.shopifyHandle);
+    return ROOT + 'product/' + h + '.html';
+  };
+  /* beeldpad: eigen beelden relatief tegenover de root, beelden van Shopify (https://cdn.shopify.com/...) zoals ze zijn */
+  TS.src = function (u) { return /^(https?:)?\/\//.test(String(u || '')) ? u : ROOT + u; };
 
-  /* ---------------------------------------------------------------- koppeling met Shopify (28/11/2026, optie a)
+  /* ---------------------------------------------------------------- koppeling met Shopify (28/11/2026)
      Producten, prijzen, voorraad, kassa, betalingen en klantenaccounts blijven in Shopify; deze site is de voorkant.
      INSTELLINGEN (de enige plaats):
        WINKEL        domein van de Shopify-winkel, zonder https:// (nu 2-sleep.be; na de verhuis bv. winkel.2-sleep.be
                      of 2-sleep-slaapcomfort.myshopify.com).
-       KASSA_ACTIEF  false = "Afrekenen" toont de voorbeeldkassa met de voorbeeldmelding (zoals de preview nu).
+       KASSA_ACTIEF  false = "Afrekenen" toont de voorbeeldkassa met de voorbeeldmelding.
                      true  = "Afrekenen" stuurt door naar de kassa van Shopify met de kassalink
                              https://<WINKEL>/cart/<variantId>:<aantal>,<variantId>:<aantal>
-       LIVE_ACTIEF   true  = productpagina, winkelmand en kassa halen de actuele prijs en beschikbaarheid uit
-                             https://<WINKEL>/products/<shopify-handle>.js (publiek, zonder token, CORS werkt).
-                     false = de prijs en beschikbaarheid van de laatste bouw (zoals de preview nu).
+       LIVE_ACTIEF   true  = alles live uit Shopify (publiek, zonder token, CORS werkt): prijs, voorraad, titels,
+                             beschrijvingen, foto's, varianten, nieuwe en verdwenen producten. De gebouwde html blijft de
+                             basis (Google, zonder JavaScript); alleen wat sinds de bouw in Shopify veranderde, wordt
+                             vervangen (vingerafdruk in assets/js/shopify-bronnen.js). Lukt Shopify niet: de bouw blijft staan.
+                     false = de inhoud van de laatste bouw.
+     Bronnen in Shopify:
+       - de hele productlijst: https://<WINKEL>/products.json?limit=250&page=N (3 pagina's voor 569 producten,
+         samen ongeveer 190 KB over de lijn), 10 minuten bewaard in de browser (localStorage 2s.feed.v1);
+       - één product: https://<WINKEL>/products/<handle>.js (op een productpagina met hooguit 3 bronnen, zolang de
+         lijst nog niet in de browser zit).
      Lokaal testen zonder deze regels te wijzigen (alleen op localhost, 127.0.0.1 of via file://):
        ?shopify=aan zet KASSA_ACTIEF en LIVE_ACTIEF aan voor dit tabblad, ?shopify=uit zet ze weer uit. */
   var SHOPIFY = { WINKEL: '2-sleep.be', KASSA_ACTIEF: true, LIVE_ACTIEF: true };
@@ -151,16 +166,17 @@
         test = window.sessionStorage.getItem('2s.shopify.test');
       } catch (e) { test = null; }
     }
-    var aan = test === 'aan';
+    var aan = test === 'aan', uit = test === 'uit';
     var W = String(SHOPIFY.WINKEL).replace(/^https?:\/\//, '').replace(/\/+$/, '');
     var basis = 'https://' + W;
-    var BEWAAR = 10 * 60 * 1000;   /* live gegevens 10 minuten bewaren in dit tabblad */
-    var bronLaden = null, geheugen = {};
+    var BEWAAR = 10 * 60 * 1000;   /* live gegevens 10 minuten bewaren in de browser */
+    var FEED = '2s.feed.v1';
+    var VERSIE_LIVE = '20261128b'; /* versie van shopify-bronnen.js en shopify-live.js (die laden we zelf) */
 
     var S = TS.shopify = {
       winkel: W,
-      kassa: !!SHOPIFY.KASSA_ACTIEF || aan,
-      live: !!SHOPIFY.LIVE_ACTIEF || aan,
+      kassa: !uit && (!!SHOPIFY.KASSA_ACTIEF || aan),
+      live: !uit && (!!SHOPIFY.LIVE_ACTIEF || aan) && !!window.fetch,
       test: aan
     };
 
@@ -177,72 +193,200 @@
       return basis + '/cart/' + volgorde.map(function (id) { return id + ':' + Math.min(99, som[id]); }).join(',');
     };
 
-    /* welke Shopify-producten horen bij een product van onze site (assets/js/shopify-bronnen.js, uit de catalogus) */
-    S.bronnen = function (handle) {
-      if (!bronLaden) {
-        bronLaden = window.SHOPIFY_BRONNEN ? Promise.resolve(window.SHOPIFY_BRONNEN) : new Promise(function (ok) {
-          var s = doc.createElement('script');
-          s.src = ROOT + 'assets/js/shopify-bronnen.js';
-          s.onload = function () { ok(window.SHOPIFY_BRONNEN || {}); };
-          s.onerror = function () { ok({}); };
-          doc.head.appendChild(s);
-        });
-      }
-      return bronLaden.then(function (m) { return (m && m[handle]) || []; });
+    /* ---- vingerafdruk (zelfde berekening als _bron/scripts/shopify-bronnen.mjs) */
+    function fnv(s) {
+      var h = 0x811c9dc5;
+      s = String(s == null ? '' : s);
+      for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+      return h.toString(36);
+    }
+    function kaal(u) { return String(u || '').replace(/^(https?:)?\/\//, '').replace(/\?.*$/, ''); }
+    function leeg(x) { return x == null ? '' : String(x); }
+    S.kaal = kaal;
+    /* x = product in onze compacte vorm (zie compact()) -> "titel.beschr.beelden.varianten" */
+    S.vinger = function (x) {
+      return [fnv(x.t), fnv(x.b), fnv(x.im.map(function (i) { return kaal(i[1]); }).join('|')),
+        fnv(x.on.join('|') + '#' + x.vs.map(function (v) { return v[0] + ':' + v[1].map(leeg).join('/'); }).join('|'))].join('.');
     };
 
-    /* één Shopify-product ophalen: {varianten: {id: {p, c, a}}} of null als het niet lukt (404 = weg) */
-    function haalBron(h) {
-      if (geheugen[h]) return geheugen[h];
+    /* ---- compacte vorm van een Shopify-product, uit products.json of uit /products/<handle>.js
+       {h, t, b, vd, pt, tg, pa, on: [optienamen], vs: [[id, [o1, o2, o3], prijs, oudePrijs|null, beschikbaar 0/1, beeldIndex|-1]],
+        im: [[id, src, breedte, hoogte]]} */
+    function geld(x, cent) {
+      if (x == null || x === '') return null;
+      var n = cent ? Number(x) / 100 : parseFloat(x);
+      return isNaN(n) ? null : Math.round(n * 100) / 100;
+    }
+    function beeldIndex(im, src) {
+      if (!src) return -1;
+      var k = kaal(src);
+      for (var i = 0; i < im.length; i++) if (kaal(im[i][1]) === k) return i;
+      return -1;
+    }
+    function compact(p, isJs) {
+      var im;
+      if (isJs) {
+        var media = (p.media || []).filter(function (m) { return m.media_type === 'image'; });
+        im = (p.images || []).map(function (src, i) {
+          var md = media[i] || {};
+          return [md.id || 0, /^\/\//.test(src) ? 'https:' + src : src, md.width || 0, md.height || 0];
+        });
+      } else {
+        im = (p.images || []).map(function (i) { return [i.id, i.src, i.width || 0, i.height || 0]; });
+      }
+      return {
+        h: p.handle, t: p.title || '', b: (isJs ? p.description : p.body_html) || '', vd: p.vendor || '',
+        pt: (isJs ? p.type : p.product_type) || '', tg: Array.isArray(p.tags) ? p.tags : String(p.tags || '').split(/\s*,\s*/).filter(Boolean),
+        pa: p.published_at || p.created_at || '',
+        on: (p.options || []).map(function (o) { return o.name; }),
+        vs: (p.variants || []).map(function (v) {
+          var c = geld(v.compare_at_price, isJs), pr = geld(v.price, isJs);
+          return [v.id, [v.option1, v.option2, v.option3], pr, c && pr != null && c > pr ? c : null, v.available ? 1 : 0,
+            beeldIndex(im, v.featured_image && v.featured_image.src)];
+        }),
+        im: im
+      };
+    }
+    S.compact = compact;
+
+    function wacht(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+    function haal(url, ms) {
+      var ctl = window.AbortController ? new AbortController() : null;
+      var klok = ctl ? setTimeout(function () { ctl.abort(); }, ms || 8000) : null;
+      return fetch(url, { credentials: 'omit', signal: ctl ? ctl.signal : undefined })
+        .then(function (r) { if (klok) clearTimeout(klok); return r; }, function (e) { if (klok) clearTimeout(klok); throw e; });
+    }
+
+    /* ---- de hele productlijst (alle pagina's). Mislukt één pagina, dan telt de hele lijst als mislukt:
+       een halve lijst zou producten ten onrechte als "verdwenen" tonen. */
+    var feedLaden = null, feedNu = null;
+    function feedUitOpslag() {
+      if (feedNu && Date.now() - feedNu.t < BEWAAR) return feedNu;
+      try {
+        var x = JSON.parse(window.localStorage.getItem(FEED) || 'null');
+        if (x && x.w === W && x.l && Date.now() - x.t < BEWAAR) return maakIdx(x);
+      } catch (e) { /* geen opslag */ }
+      return null;
+    }
+    function maakIdx(d) {
+      if (d.idx) return d;
+      d.idx = {};
+      d.l.forEach(function (p) { d.idx[p.h] = p; });
+      return (feedNu = d);
+    }
+    function haalPagina(n, poging) {
+      return haal(basis + '/products.json?limit=250&page=' + n, 12000).then(function (r) {
+        if (r.status === 429 && !poging) return wacht(1500).then(function () { return haalPagina(n, 1); });
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json().then(function (j) { return (j.products || []).map(function (p) { return compact(p, false); }); });
+      });
+    }
+    function haalAllePaginas() {
+      var alle = [];
+      function verder(van) {
+        return Promise.all([van, van + 1, van + 2].map(function (n) { return haalPagina(n); })).then(function (res) {
+          res.forEach(function (r) { alle = alle.concat(r); });
+          if (res[2].length === 250 && van < 13) return verder(van + 3);
+          return alle;
+        });
+      }
+      return verder(1);
+    }
+    S.feedVers = function () { return !!feedUitOpslag(); };
+    /* Promise met {t, l: [compact], idx: {handle: compact}} of null */
+    S.feed = function () {
+      if (!S.live) return Promise.resolve(null);
+      var c = feedUitOpslag();
+      if (c) return Promise.resolve(c);
+      if (feedLaden) return feedLaden;
+      feedLaden = haalAllePaginas().then(function (l) {
+        var gezien = {}, uniek = l.filter(function (p) { if (gezien[p.h]) return false; gezien[p.h] = 1; return true; });
+        var d = { w: W, t: Date.now(), l: uniek };
+        try { window.localStorage.setItem(FEED, JSON.stringify(d)); }
+        catch (e) { try { window.localStorage.removeItem(FEED); } catch (e2) { /* vol of geblokkeerd: alleen in dit tabblad */ } }
+        feedLaden = null;
+        return maakIdx(d);
+      }).catch(function () { feedLaden = null; return null; });
+      return feedLaden;
+    };
+
+    /* ---- één Shopify-product: compact, {weg: true} (bestaat niet meer) of null (mislukt) */
+    var losGeheugen = {};
+    S.bron = function (h) {
+      var f = feedUitOpslag();
+      if (f) return Promise.resolve(f.idx[h] || { weg: true });
+      if (losGeheugen[h]) return losGeheugen[h];
       var sleutel = '2s.live.' + h;
       try {
         var oud = JSON.parse(window.sessionStorage.getItem(sleutel) || 'null');
-        if (oud && Date.now() - oud.t < BEWAAR) return (geheugen[h] = Promise.resolve(oud.d));
-      } catch (e) { /* geen sessionStorage: gewoon ophalen */ }
-      var ctl = window.AbortController ? new AbortController() : null;
-      var klok = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : null;
-      geheugen[h] = fetch(basis + '/products/' + encodeURIComponent(h) + '.js', { credentials: 'omit', signal: ctl ? ctl.signal : undefined })
+        if (oud && oud.w === W && Date.now() - oud.t < BEWAAR) return (losGeheugen[h] = Promise.resolve(oud.d));
+      } catch (e) { /* gewoon ophalen */ }
+      losGeheugen[h] = haal(basis + '/products/' + encodeURIComponent(h) + '.js', 8000)
         .then(function (r) {
-          if (r.status === 404) return { weg: true, varianten: {} };
+          if (r.status === 404) return { weg: true };
           if (!r.ok) throw new Error('status ' + r.status);
-          return r.json().then(function (j) {
-            var v = {};
-            (j.variants || []).forEach(function (x) {
-              v[x.id] = { p: x.price / 100, c: x.compare_at_price && x.compare_at_price > x.price ? x.compare_at_price / 100 : null, a: !!x.available };
-            });
-            return { weg: false, varianten: v };
-          });
+          return r.json().then(function (j) { return compact(j, true); });
         })
         .then(function (d) {
-          try { window.sessionStorage.setItem(sleutel, JSON.stringify({ t: Date.now(), d: d })); } catch (e) { /* vol of geblokkeerd */ }
+          try { window.sessionStorage.setItem(sleutel, JSON.stringify({ w: W, t: Date.now(), d: d })); } catch (e) { /* vol */ }
           return d;
         })
-        .catch(function () { delete geheugen[h]; return null; })
-        .then(function (d) { if (klok) clearTimeout(klok); return d; });
-      return geheugen[h];
-    }
+        .catch(function () { delete losGeheugen[h]; return null; });
+      return losGeheugen[h];
+    };
 
-    /* actuele gegevens van een product van onze site.
-       Antwoord: {ok, mislukt, varianten: {variantId: {p, c, a, bron}}, gekend: {bron: true}}.
-       Een variant die niet in "varianten" staat terwijl haar bron wel opgehaald werd, bestaat niet meer in Shopify. */
+    /* ---- welke Shopify-producten horen bij een product van onze site (assets/js/shopify-bronnen.js) */
+    var bronLaden = null;
+    S.laadBronnen = function () {
+      if (!bronLaden) {
+        bronLaden = window.SHOPIFY_BRONNEN ? Promise.resolve(true) : new Promise(function (ok) {
+          var s = doc.createElement('script');
+          s.src = ROOT + 'assets/js/shopify-bronnen.js?v=' + VERSIE_LIVE;
+          s.onload = function () { ok(!!window.SHOPIFY_BRONNEN); };
+          s.onerror = function () { ok(false); };
+          doc.head.appendChild(s);
+        });
+      }
+      return bronLaden;
+    };
+    S.bronnen = function (handle) {
+      return S.laadBronnen().then(function (ok) {
+        if (!ok) return [];
+        var m = window.SHOPIFY_BRONNEN[handle];
+        if (m) return m;
+        /* een nieuw product uit Shopify (niet in de bouw): zijn handle in Shopify */
+        var p = TS.product(handle);
+        return p && p.shopifyHandle ? [p.shopifyHandle] : [];
+      });
+    };
+
+    /* ---- de Shopify-producten van een product van onze site.
+       Antwoord: {ok, mislukt, weg, varianten: {variantId: {p, c, a, bron}}, gekend: {bron: true}, prods: {bron: compact|null}}.
+       Een variant die niet in "varianten" staat terwijl haar bron wel gekend is, bestaat niet meer in Shopify.
+       weg = alle bronnen bestaan niet meer. Hooguit 3 bronnen en de lijst zit nog niet in de browser: één klein verzoek
+       per bron; anders de hele lijst (3 verzoeken, ook goed voor de volgende pagina's). */
     S.liveProduct = function (handle, alleen) {
-      if (!S.live || !window.fetch) return Promise.resolve(null);
+      if (!S.live) return Promise.resolve(null);
       return (alleen && alleen.length ? Promise.resolve(alleen) : S.bronnen(handle)).then(function (lijst) {
         if (!lijst.length) return null;
-        var uit = { ok: 0, mislukt: 0, varianten: {}, gekend: {} };
-        var i = 0;
-        function volgende() {   /* hooguit 4 tegelijk, om de winkel niet te overvragen */
-          if (i >= lijst.length) return Promise.resolve();
-          var h = lijst[i++];
-          return haalBron(h).then(function (d) {
-            if (!d) { uit.mislukt++; return; }
-            uit.ok++; uit.gekend[h] = true;
-            Object.keys(d.varianten).forEach(function (id) { var x = d.varianten[id]; uit.varianten[id] = { p: x.p, c: x.c, a: x.a, bron: h }; });
-          }).then(volgende);
+        var uit = { ok: 0, mislukt: 0, weg: false, varianten: {}, gekend: {}, prods: {} };
+        function verwerk(h, d) {
+          if (!d) { uit.mislukt++; return; }
+          uit.ok++; uit.gekend[h] = true;
+          if (d.weg) { uit.prods[h] = null; return; }
+          uit.prods[h] = d;
+          d.vs.forEach(function (v) { uit.varianten[v[0]] = { p: v[2], c: v[3], a: !!v[4], bron: h }; });
         }
-        var lopers = [];
-        for (var k = 0; k < Math.min(4, lijst.length); k++) lopers.push(volgende());
-        return Promise.all(lopers).then(function () { return uit; });
+        var stap;
+        if (lijst.length > 3 && !S.feedVers()) {
+          stap = S.feed().then(function (f) { lijst.forEach(function (h) { verwerk(h, f ? (f.idx[h] || { weg: true }) : null); }); });
+        } else {
+          stap = Promise.all(lijst.map(function (h) { return S.bron(h).then(function (d) { verwerk(h, d); }); }));
+        }
+        return stap.then(function () {
+          uit.weg = !uit.mislukt && uit.ok > 0 && lijst.every(function (h) { return uit.prods[h] === null; });
+          return uit;
+        });
       });
     };
 
@@ -293,6 +437,25 @@
       if (w.soort === 'weg') return naam + ' is niet meer online te koop en is uit je winkelmand gehaald.';
       return 'De prijs van ' + naam + ' is nu ' + TS.prijs(w.nieuw) + ' (was ' + TS.prijs(w.oud) + ').';
     };
+
+    /* ---- de live laag (assets/js/shopify-live.js): titels, beschrijvingen, foto's, varianten, nieuwe en verdwenen
+       producten, lijsten, tellers. Pas laden als het nodig is; TS.live.klaar is een Promise. */
+    var laagLaden = null;
+    S.laadLaag = function () {
+      if (!S.live) return Promise.resolve(null);
+      if (!laagLaden) {
+        laagLaden = new Promise(function (ok) {
+          if (TS.live) return ok(TS.live);
+          var s = doc.createElement('script');
+          s.src = ROOT + 'assets/js/shopify-live.js?v=' + VERSIE_LIVE;
+          s.onload = function () { ok(TS.live || null); };
+          s.onerror = function () { ok(null); };
+          doc.head.appendChild(s);
+        });
+      }
+      return laagLaden;
+    };
+    S.versie = VERSIE_LIVE;
   })();
 
   /* iconen (zelfde als in bouw.py) */
@@ -322,10 +485,10 @@
     if (!c) return '<div class="plaat plaat--leeg"><span class="plaat__merk">' + esc(p.brand) + '</span><span class="plaat__naam">' + esc(p.nameShort) + '</span></div>';
     var cls = 'plaat plaat--' + (c.bg === 'white' ? 'wit' : 'foto') + (c.small ? ' plaat--klein' : '');
     var stijl = c.small ? ' style="--nw:' + c.nw + 'px;--nh:' + c.nh + 'px"' : '';
-    var ss = c.lw && c.lw > c.w ? ' srcset="' + ROOT + c.thumb + ' ' + c.w + 'w, ' + ROOT + c.src + ' ' + c.lw + 'w" sizes="' + (sizes || '50vw') + '"' : '';
-    var a = '<img class="plaat__a" src="' + ROOT + c.thumb + '"' + ss + ' width="' + c.w + '" height="' + c.h + '" alt="" loading="lazy" decoding="async">';
+    var ss = c.lw && c.lw > c.w ? ' srcset="' + TS.src(c.thumb) + ' ' + c.w + 'w, ' + TS.src(c.src) + ' ' + c.lw + 'w" sizes="' + (sizes || '50vw') + '"' : '';
+    var a = '<img class="plaat__a" src="' + TS.src(c.thumb) + '"' + ss + ' width="' + c.w + '" height="' + c.h + '" alt="" loading="lazy" decoding="async">';
     var b = '';
-    if (p.hover) b = '<img class="plaat__b plaat__b--' + (p.hover.bg === 'white' ? 'wit' : 'foto') + '" src="' + ROOT + p.hover.thumb + '" width="' + p.hover.w + '" height="' + p.hover.h + '" alt="" loading="lazy" decoding="async">';
+    if (p.hover) b = '<img class="plaat__b plaat__b--' + (p.hover.bg === 'white' ? 'wit' : 'foto') + '" src="' + TS.src(p.hover.thumb) + '" width="' + p.hover.w + '" height="' + p.hover.h + '" alt="" loading="lazy" decoding="async">';
     return '<div class="' + cls + '"' + stijl + '>' + a + b + '</div>';
   };
   TS.kaart = function (p, opts) {
@@ -993,6 +1156,28 @@
     formulieren(); wanden(); schuif(); stage(); merkIndex(); TS.rijen(); extern(); cookiebanner(); cookiestatus();
     reveal();
     TS.emit('klaar', {});
+    liveLaag();
+  }
+
+  /* alles live uit Shopify: de live laag werkt lijsten, tellers in het menu, tegels en kaarten bij als de browser even
+     niets te doen heeft (de pagina zelf staat er dan al). Op de productpagina start product.js ze zelf, na prijs en voorraad.
+     Niet op de kassa (die stuurt meteen door). */
+  function liveLaag() {
+    var S = TS.shopify;
+    var dyn = $('main[data-dynamisch]');
+    if (dyn) {   /* product/index.html?p=...: een product dat niet in de bouw zit, meteen uit Shopify */
+      var mis = function () {
+        dyn.removeAttribute('aria-busy');
+        dyn.innerHTML = '<div class="pd pd--melding"><div class="pd__kolom"><h1 class="pd__h1">Dit product kunnen we nu niet tonen</h1>' +
+          '<p>Probeer het zo meteen opnieuw, of bekijk <a href="' + ROOT + 'index.html#afdelingen">onze afdelingen</a>.</p></div></div>';
+      };
+      if (!S || !S.live) { mis(); return; }
+      S.laadLaag().then(function (L) { if (L) { L.dynamisch(); L.start(); } else mis(); });
+      return;
+    }
+    if (!S || !S.live || body.classList.contains('p-afrekenen') || body.classList.contains('p-product')) return;
+    var go = function () { S.laadLaag().then(function (L) { if (L) L.start(); }); };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 1500 }); else setTimeout(go, 200);
   }
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', start); else start();
 })();

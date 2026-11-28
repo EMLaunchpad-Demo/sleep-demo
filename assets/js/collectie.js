@@ -1,5 +1,7 @@
 /* Collectiepagina: filters, sorteren en "Toon meer" op de echte catalogus (window.CATALOG uit data.js).
-   De kaarten staan al in de HTML (gebouwd door bouw.py); dit script toont, verbergt en herschikt ze. */
+   De kaarten staan al in de HTML (gebouwd door bouw.py); dit script toont, verbergt en herschikt ze.
+   Alles live uit Shopify (28/11/2026): na het event ts:catalogus (shopify-live.js) zijn verdwenen kaarten weg en
+   gewijzigde kaarten vervangen; dit script voegt dan de nieuwe producten van deze pagina toe en bouwt de filters opnieuw. */
 (function () {
   'use strict';
   var TS = window.TS, main = document.querySelector('[data-collectie]');
@@ -7,10 +9,14 @@
   var $ = TS.$, $$ = TS.$$, esc = TS.esc;
   var raster = $('[data-raster]', main), vak = $('[data-filters]', main);
   var redactie = $('.redactie', raster);
-  var kaarten = $$('.kaart', raster);
   var PER = 24;
   var soort = main.getAttribute('data-soort');
-  var items = kaarten.map(function (k, i) { return { el: k, p: TS.product(k.getAttribute('data-h')), i: i }; }).filter(function (x) { return x.p; });
+  var slug = main.getAttribute('data-collectie');
+  var items = [];
+  function leesKaarten() {
+    items = $$('.kaart', raster).map(function (k, i) { return { el: k, p: TS.product(k.getAttribute('data-h')), i: i }; }).filter(function (x) { return x.p; });
+  }
+  leesKaarten();
   var TINTEN = { wit: ['Wit en crème', '#f2efe6'], beige: ['Beige en zand', '#d8c7a6'], grijs: ['Grijs', '#a3a3a0'], zwart: ['Antraciet en zwart', '#2b2b2b'],
     blauw: ['Blauw', '#4c6f96'], groen: ['Groen', '#6f8b6a'], roze: ['Roze en rood', '#c98a8a'], bruin: ['Bruin', '#7a5b45'] };
   var MAT_VOLG = ['Dons', 'Veren', 'Wol', 'Paardenhaar', 'Katoen', 'Zijde', 'Kasjmier', 'Mohair', 'Alpaca', 'Linnen', 'Tencel', 'Bamboe', 'Latex', 'Traagschuim', 'Koudschuim', 'Kapok', 'Synthetisch', 'Jersey', 'Flanel'];
@@ -63,18 +69,28 @@
     }).length;
   }
 
-  /* ---------------- welke groepen bestaan er in deze afdeling */
+  /* ---------------- welke groepen bestaan er in deze afdeling (opnieuw na live gegevens) */
   function uniek(f) { var s = {}; items.forEach(function (x) { (f(x.p) || []).forEach(function (v) { s[v] = (s[v] || 0) + 1; }); }); return s; }
-  var merken = uniek(function (p) { return p.brands; });
-  var maten = Object.keys(uniek(function (p) { return p.sizes; })).sort(function (a, b) {
-    var x = a.split('/').map(Number), y = b.split('/').map(Number); return x[0] - y[0] || x[1] - y[1];
-  });
-  var tinten = Object.keys(TINTEN).filter(function (t) { return items.some(function (x) { return (x.p.tints || []).indexOf(t) > -1; }); });
-  var mats = MAT_VOLG.filter(function (m) { return items.some(function (x) { return (x.p.materials || []).indexOf(m) > -1; }); });
-  var merkNaam = {}; window.CATALOG.brands.forEach(function (b) { merkNaam[b.slug] = b.name; });
-  var prijzen = items.map(function (x) { return x.p.priceMin; }).sort(function (a, b) { return a - b; });
-  var heeftPromo = items.some(function (x) { return x.p.promo || x.p.showroom || x.p.stockverkoop || x.p.onSale; });
-  var heeftWeg = items.some(function (x) { return x.p.status !== 'beschikbaar'; });
+  var merken, maten, tinten, mats, merkNaam, prijzen, heeftPromo, heeftWeg, GROEPEN;
+  function afleiden() {
+    merken = uniek(function (p) { return p.brands; });
+    maten = Object.keys(uniek(function (p) { return p.sizes; })).sort(function (a, b) {
+      var x = a.split('/').map(Number), y = b.split('/').map(Number); return x[0] - y[0] || x[1] - y[1];
+    });
+    tinten = Object.keys(TINTEN).filter(function (t) { return items.some(function (x) { return (x.p.tints || []).indexOf(t) > -1; }); });
+    mats = MAT_VOLG.filter(function (m) { return items.some(function (x) { return (x.p.materials || []).indexOf(m) > -1; }); });
+    merkNaam = {}; window.CATALOG.brands.forEach(function (b) { merkNaam[b.slug] = b.name; });
+    prijzen = items.map(function (x) { return x.p.priceMin; }).filter(function (x) { return x != null; }).sort(function (a, b) { return a - b; });
+    heeftPromo = items.some(function (x) { return x.p.promo || x.p.showroom || x.p.stockverkoop || x.p.onSale; });
+    heeftWeg = items.some(function (x) { return x.p.status !== 'beschikbaar'; });
+    GROEPEN = [];
+    if (soort !== 'merk' && Object.keys(merken).length > 1) GROEPEN.push({ k: 'merk', t: 'Merk' });
+    if (prijzen.length > 3 && prijzen[0] !== prijzen[prijzen.length - 1]) GROEPEN.push({ k: 'prijs', t: 'Prijs' });
+    if (maten.length > 1) GROEPEN.push({ k: 'maat', t: 'Maat' });
+    if (tinten.length > 1) GROEPEN.push({ k: 'tint', t: 'Kleurtint' });
+    if (mats.length > 1) GROEPEN.push({ k: 'mat', t: 'Materiaal' });
+  }
+  afleiden();
 
   function rond(x) {
     if (x < 100) return Math.round(x / 10) * 10 || 10;
@@ -94,12 +110,6 @@
     return uit;
   }
 
-  var GROEPEN = [];
-  if (soort !== 'merk' && Object.keys(merken).length > 1) GROEPEN.push({ k: 'merk', t: 'Merk' });
-  if (prijzen.length > 3 && prijzen[0] !== prijzen[prijzen.length - 1]) GROEPEN.push({ k: 'prijs', t: 'Prijs' });
-  if (maten.length > 1) GROEPEN.push({ k: 'maat', t: 'Maat' });
-  if (tinten.length > 1) GROEPEN.push({ k: 'tint', t: 'Kleurtint' });
-  if (mats.length > 1) GROEPEN.push({ k: 'mat', t: 'Materiaal' });
 
   function aantalActief(k) {
     if (k === 'prijs') return (st.min != null || st.max != null) ? 1 : 0;
@@ -139,25 +149,28 @@
 
   /* ---------------- balk (desktop) en paneel (gsm) */
   var openPop = null;
+  var paneel = document.createElement('div');
+  paneel.className = 'fpaneel'; paneel.hidden = true;
+  paneel.setAttribute('role', 'dialog'); paneel.setAttribute('aria-modal', 'true'); paneel.setAttribute('aria-labelledby', 'fpaneel-kop');
+  document.body.appendChild(paneel);
+  function balkTekenen() {
   vak.innerHTML = '<div class="filters__balk">' + GROEPEN.map(function (g) {
     return '<div class="fgroep"><button type="button" class="fknop" aria-expanded="false" aria-controls="fpop-' + g.k + '" data-pop="' + g.k + '">' + g.t +
       ' <span class="fknop__n" data-n="' + g.k + '"></span>' + TS.icoon('neer') + '</button><div class="fpop" id="fpop-' + g.k + '" role="group" aria-label="' + g.t + '" hidden data-body="' + g.k + '"></div></div>';
   }).join('') + schakelaars('d') +
     '<button type="button" class="fknop filters__gsm" data-fpaneel-open aria-haspopup="dialog">Filter en sorteer <span class="fknop__n" data-n-tot></span></button>' +
     '<div class="filters__rechts">' + sorteerSelect('sorteer-d') + '<span class="filters__tel" data-tel aria-live="polite"></span></div></div>';
-  var chips = document.createElement('div');
-  chips.className = 'chips'; chips.setAttribute('data-chips', '');
-  vak.parentNode.insertBefore(chips, vak.nextSibling);
-
-  var paneel = document.createElement('div');
-  paneel.className = 'fpaneel'; paneel.hidden = true;
-  paneel.setAttribute('role', 'dialog'); paneel.setAttribute('aria-modal', 'true'); paneel.setAttribute('aria-labelledby', 'fpaneel-kop');
   paneel.innerHTML = '<div class="fpaneel__kop"><h2 id="fpaneel-kop">Filter en sorteer</h2><button type="button" class="gsm__sluit" data-fpaneel-sluit aria-label="Sluiten">' + TS.icoon('sluiten') + '</button></div>' +
     '<div class="fpaneel__body"><div style="margin:8px 0 16px">' + sorteerSelect('sorteer-m') + '</div>' +
     GROEPEN.map(function (g) { return '<details><summary>' + g.t + ' <span class="fknop__n" data-n="' + g.k + '"></span></summary><div data-body="' + g.k + '" data-pre="m"></div></details>'; }).join('') +
     '<div style="display:grid;gap:4px;margin-top:16px">' + schakelaars('m') + '</div></div>' +
     '<div class="fpaneel__voet"><button type="button" class="tlink fpaneel__wis" data-f="wis">Wis alles</button><button type="button" class="knop knop--vol" data-fpaneel-sluit data-toon-n>Toon producten</button></div>';
-  document.body.appendChild(paneel);
+  $('[data-fpaneel-open]', vak).addEventListener('click', paneelOpen);
+  }
+  balkTekenen();
+  var chips = document.createElement('div');
+  chips.className = 'chips'; chips.setAttribute('data-chips', '');
+  vak.parentNode.insertBefore(chips, vak.nextSibling);
 
   function bodies() {
     $$('[data-body]', vak).concat($$('[data-body]', paneel)).forEach(function (b) {
@@ -206,7 +219,6 @@
     setTimeout(function () { paneel.hidden = true; }, TS.reduce ? 0 : 360);
     if (opener) opener.focus();
   }
-  $('[data-fpaneel-open]', vak).addEventListener('click', paneelOpen);
   paneel.addEventListener('click', function (e) { if (e.target.closest('[data-fpaneel-sluit]')) paneelSluit(); });
   paneel.addEventListener('keydown', function (e) { if (e.key === 'Escape') paneelSluit(); TS.focusVal(paneel, e); });
 
@@ -326,4 +338,29 @@
   });
 
   pas(true);
+
+  /* ---------------- live uit Shopify (shopify-live.js): nieuwe producten van deze pagina erbij, filters opnieuw */
+  function hoortHier(p) {
+    if (soort === 'cat') return (p.categories || []).indexOf(slug) > -1;
+    if (soort === 'merk') return (p.brands || []).indexOf(slug) > -1;
+    if (slug === 'showroommodellen') return !!(p.showroom || p.stockverkoop);
+    if (slug === 'promoties') return !!((p.promo || p.onSale) && !p.showroom && !p.stockverkoop);
+    return false;
+  }
+  TS.on('catalogus', function () {
+    var er = {};
+    $$('.kaart', raster).forEach(function (k) { er[k.getAttribute('data-h')] = 1; });
+    var tmp = document.createElement('div');
+    window.CATALOG.products.forEach(function (p) {
+      if (!p.nieuw || er[p.handle] || !hoortHier(p)) return;
+      tmp.innerHTML = TS.kaart(p, { sizes: '(min-width: 1280px) 23vw, (min-width: 768px) 31vw, 47vw' });
+      raster.appendChild(tmp.firstChild);
+    });
+    popSluit();
+    leesKaarten();
+    afleiden();
+    balkTekenen();
+    pas(true);
+    TS.hartjes();
+  });
 })();

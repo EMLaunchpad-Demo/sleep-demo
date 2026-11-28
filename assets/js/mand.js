@@ -60,7 +60,7 @@
   TS.miniPlaat = function (o) {
     var src = o.mini || o.thumb;
     if (!src) return '<span class="mplaat mplaat--leeg" aria-hidden="true">' + esc(o.brand || '') + '</span>';
-    return '<span class="mplaat mplaat--' + (o.bg === 'white' ? 'wit' : 'foto') + '" aria-hidden="true"><img src="' + R + esc(src) +
+    return '<span class="mplaat mplaat--' + (o.bg === 'white' ? 'wit' : 'foto') + '" aria-hidden="true"><img src="' + esc(TS.src ? TS.src(src) : R + src) +
       '" alt="" width="80" height="80" loading="lazy" decoding="async"></span>';
   };
   /* bruikbaar uit een catalogusproduct */
@@ -78,7 +78,9 @@
     var bed = (p.categories || []).some(function (x) { return BEDDEN.indexOf(x) > -1; }) && p.priceMin >= 300;
     return { handle: p.handle, variantId: sv.id, name: p.name, brand: p.brand,
       variant: sv.title && !/^(default|standaard)/i.test(sv.title) ? sv.title : '', price: sv.price, qty: 1,
-      thumb: c.thumb || null, mini: c.mini || null, bg: c.bg || null, isBed: bed, url: 'product/' + p.handle + '.html' };
+      thumb: c.thumb || null, mini: c.mini || null, bg: c.bg || null, isBed: bed,
+      url: p.shopifyHandle ? 'product/index.html?p=' + encodeURIComponent(p.shopifyHandle) : 'product/' + p.handle + '.html',
+      bron: p.shopifyHandle || null };
   };
 
   /* ---------------------------------------------------------------- opmaak */
@@ -86,7 +88,7 @@
     var naam = esc(x.name || '');
     var stuk = (x.qty || 1) > 1 ? '<span class="mregel__stuk">' + x.qty + ' × ' + TS.prijs(x.price) + '</span>' : '';
     var k = esc(x.key);
-    var url = x.url ? R + esc(x.url) : TS.productUrl(x.handle);
+    var url = x.url ? R + esc(x.url) : esc(TS.productUrl(x.handle));
     return '<li class="mregel" data-key="' + k + '">' +
       '<a href="' + url + '" tabindex="-1" aria-hidden="true">' + TS.miniPlaat(x) + '</a>' +
       '<div class="mregel__info">' +

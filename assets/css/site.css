@@ -1627,3 +1627,15 @@ html:not(.js) .schuif__greep { display: none; }
 .drie--langs .drie__knop { text-decoration: none; justify-content: center; }
 .proef__meer { margin-top: 16px; }
 .proef__meer .tlink { color: var(--on-dark); }
+
+/* ---------------------------------------------------------------- alles live uit Shopify (28/11/2026)
+   .pd__weg: product bestaat niet meer in Shopify (shopify-live.js, toonWeg). .pd--melding: product/index.html zonder product.
+   .pd--laden: product/index.html terwijl het product uit Shopify komt. */
+.pd__weg { display: grid; gap: 12px; padding: 20px; background: var(--tile); margin: 4px 0 24px; }
+.pd__weg p { margin: 0; }
+.pd__weg-kop { font-weight: 500; font-size: var(--step-lead); }
+.pd--melding { display: block; padding: 24px var(--margin) 72px; }
+.pd--melding .pd__kolom { padding: 0; max-width: 62ch; }
+.pd--melding .pd__h1 { margin: 24px 0 16px; }
+.pd__melding-knoppen { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; margin-top: 24px; }
+.pd--laden .pd__h1 { color: var(--muted); }

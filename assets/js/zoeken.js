@@ -313,6 +313,13 @@
     TS.loadCatalog().then(zpTeken);
   }
 
+  /* live uit Shopify (shopify-live.js): de catalogus is bijgewerkt, opnieuw indexeren en tonen */
+  TS.on('catalogus', function () {
+    IDX = null;
+    if (open) teken();
+    if (zp && zpForm && zpVeld) zpTeken();
+  });
+
   TS.on('open-search', function (e) {
     e.preventDefault();
     if (zpVeld) { zpVeld.focus(); zpVeld.select(); return; }
