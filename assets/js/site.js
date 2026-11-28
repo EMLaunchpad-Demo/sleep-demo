@@ -139,7 +139,7 @@
                      false = de prijs en beschikbaarheid van de laatste bouw (zoals de preview nu).
      Lokaal testen zonder deze regels te wijzigen (alleen op localhost, 127.0.0.1 of via file://):
        ?shopify=aan zet KASSA_ACTIEF en LIVE_ACTIEF aan voor dit tabblad, ?shopify=uit zet ze weer uit. */
-  var SHOPIFY = { WINKEL: '2-sleep.be', KASSA_ACTIEF: false, LIVE_ACTIEF: false };
+  var SHOPIFY = { WINKEL: '2-sleep.be', KASSA_ACTIEF: true, LIVE_ACTIEF: true };
 
   (function () {
     var lokaal = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
